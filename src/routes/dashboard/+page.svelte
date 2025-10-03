@@ -112,7 +112,7 @@
 		<div class="protokoll-content">
 			<!-- Bearbeiten Button -->
 			<div class="action-bar">
-				<button on:click={() => goto('/edit')} class="edit-btn">
+				<button on:click={() => goto(`/edit?date=${currentDate}`)} class="edit-btn">
 					✏️ Protokoll bearbeiten
 				</button>
 				<button on:click={handleDelete} class="delete-btn">
@@ -183,7 +183,7 @@
 	{:else}
 		<div class="no-protokoll">
 			<p>📝 Für diesen Tag ist noch kein Protokoll vorhanden.</p>
-			<button on:click={() => goto('/edit')} class="create-btn">
+			<button on:click={() => goto(`/edit?date=${currentDate}`)} class="create-btn">
 				Neues Protokoll erstellen
 			</button>
 		</div>

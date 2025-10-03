@@ -2,9 +2,11 @@
 	import { supabase } from '$lib/supabaseClient';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 	import { getProtokoll, saveProtokoll, getToday, getEmptyProtokoll } from '$lib/protokollService';
 	import { darkMode } from '$lib/darkModeStore';
 
+	// Datum aus URL-Parameter lesen, oder heutiges Datum verwenden
 	let currentDate = getToday();
 	let formData = getEmptyProtokoll();
 	let loading = true;
@@ -49,6 +51,13 @@
 			return;
 		}
 
+		// Datum aus URL-Parameter lesen
+		const urlParams = new URLSearchParams(window.location.search);
+		const dateParam = urlParams.get('date');
+		if (dateParam) {
+			currentDate = dateParam;
+		}
+
 		// Protokoll laden (falls vorhanden)
 		const protokoll = await getProtokoll(currentDate);
 		if (protokoll) {
@@ -62,10 +71,10 @@
 		const result = await saveProtokoll(currentDate, formData);
 		
 		if (result) {
-			alert('Protokoll gespeichert! ✅');
+			alert('Protokoll gespeichert!');
 			goto('/dashboard');
 		} else {
-			alert('Fehler beim Speichern! ❌');
+			alert('Fehler beim Speichern!');
 		}
 		saving = false;
 	}
@@ -77,7 +86,7 @@
 
 <div class="edit-container">
 	{#if loading}
-		<p>Lade Daten...</p>
+		<p class="loading-text">Lade Daten...</p>
 	{:else}
 		<div class="edit-header">
 			<h1>Protokoll bearbeiten</h1>
@@ -207,6 +216,13 @@
 		margin: 0 auto;
 		background: var(--bg-primary);
 		min-height: 100vh;
+	}
+
+	.loading-text {
+		text-align: center;
+		font-size: 1.2rem;
+		color: var(--text-secondary);
+		padding: 60px 20px;
 	}
 
 	.edit-header {
