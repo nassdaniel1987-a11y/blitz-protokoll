@@ -5,14 +5,20 @@
 	import { page } from '$app/stores';
 	import { getProtokoll, saveProtokoll, getToday, getEmptyProtokoll } from '$lib/protokollService';
 	import { darkMode } from '$lib/darkModeStore';
+	import PersonenAuswahlModal from '$lib/components/PersonenAuswahlModal.svelte';
 
-	// Datum aus URL-Parameter lesen, oder heutiges Datum verwenden
 	let currentDate = getToday();
 	let formData = getEmptyProtokoll();
 	let loading = true;
 	let saving = false;
 
-	// Raumliste - HOF HINZUGEFÜGT
+	// Modal States
+	let showAnwesenheitModal = false;
+	let showAbwesendModal = false;
+	let anwesenheitArray = [];
+	let abwesendArray = [];
+
+	// Raumliste
 	const raeume = [
 		'treffpunkt_1',
 		'treffpunkt_2',
@@ -27,10 +33,8 @@
 		'hof'
 	];
 
-	// Zeitslots
 	const zeitslots = ['12:25-13:10', '13:15-14:00', '14:00-14:30'];
 
-	// Raum-Labels (schöner formatiert) - HOF HINZUGEFÜGT
 	const raumLabels = {
 		treffpunkt_1: 'Treffpunkt 1',
 		treffpunkt_2: 'Treffpunkt 2',
@@ -46,32 +50,48 @@
 	};
 
 	onMount(async () => {
-		// Auth-Check
 		const { data } = await supabase.auth.getSession();
 		if (!data.session) {
 			goto('/');
 			return;
 		}
 
-		// Datum aus URL-Parameter lesen
 		const urlParams = new URLSearchParams(window.location.search);
 		const dateParam = urlParams.get('date');
 		if (dateParam) {
 			currentDate = dateParam;
 		}
 
-		// Protokoll laden (falls vorhanden)
 		const protokoll = await getProtokoll(currentDate);
 		if (protokoll) {
 			formData = protokoll.inhalt;
+			anwesenheitArray = parsePersonenString(formData.anwesenheit);
+			abwesendArray = parsePersonenString(formData.abwesend || '');
 		} else {
-			// Sicherstellen dass "hof" in leeren Protokollen existiert
 			formData = getEmptyProtokoll();
 		}
 		loading = false;
 	});
 
-	// Auto-resize für Textareas
+	function parsePersonenString(str) {
+		if (!str) return [];
+		return str.split(',').map(s => s.trim()).filter(s => s);
+	}
+
+	function arrayToString(arr) {
+		return arr.join(', ');
+	}
+
+	function handleAnwesenheitSelect(event) {
+		anwesenheitArray = event.detail;
+		formData.anwesenheit = arrayToString(anwesenheitArray);
+	}
+
+	function handleAbwesendSelect(event) {
+		abwesendArray = event.detail;
+		formData.abwesend = arrayToString(abwesendArray);
+	}
+
 	function autoResize(event) {
 		const textarea = event.target;
 		textarea.style.height = 'auto';
@@ -96,6 +116,20 @@
 	}
 </script>
 
+<PersonenAuswahlModal 
+	bind:show={showAnwesenheitModal}
+	selectedPersonen={anwesenheitArray}
+	on:select={handleAnwesenheitSelect}
+	on:close={() => showAnwesenheitModal = false}
+/>
+
+<PersonenAuswahlModal 
+	bind:show={showAbwesendModal}
+	selectedPersonen={abwesendArray}
+	on:select={handleAbwesendSelect}
+	on:close={() => showAbwesendModal = false}
+/>
+
 <div class="edit-container">
 	{#if loading}
 		<p class="loading-text">Lade Daten...</p>
@@ -106,18 +140,49 @@
 		</div>
 
 		<form>
-			<!-- Allgemeine Informationen -->
 			<section class="section">
 				<h2>Allgemeine Informationen</h2>
 				
 				<div class="form-group">
 					<label for="anwesenheit">Anwesenheit</label>
-					<input 
-						type="text" 
-						id="anwesenheit" 
-						bind:value={formData.anwesenheit}
-						placeholder="z.B. Max, Lisa, Thomas"
-					/>
+					<div class="input-with-button">
+						<input 
+							type="text" 
+							id="anwesenheit" 
+							bind:value={formData.anwesenheit}
+							placeholder="Klicken zum Auswählen..."
+							on:click={() => showAnwesenheitModal = true}
+							readonly
+						/>
+						<button 
+							type="button" 
+							class="select-btn"
+							on:click={() => showAnwesenheitModal = true}
+						>
+							Auswählen
+						</button>
+					</div>
+				</div>
+
+				<div class="form-group">
+					<label for="abwesend">Abwesend</label>
+					<div class="input-with-button">
+						<input 
+							type="text" 
+							id="abwesend" 
+							bind:value={formData.abwesend}
+							placeholder="Klicken zum Auswählen..."
+							on:click={() => showAbwesendModal = true}
+							readonly
+						/>
+						<button 
+							type="button" 
+							class="select-btn"
+							on:click={() => showAbwesendModal = true}
+						>
+							Auswählen
+						</button>
+					</div>
 				</div>
 
 				<div class="form-group">
@@ -171,7 +236,6 @@
 				</div>
 			</section>
 
-			<!-- Belegungsplanung Matrix -->
 			<section class="section">
 				<h2>Belegungsplanung</h2>
 				
@@ -209,7 +273,6 @@
 				</div>
 			</section>
 
-			<!-- Buttons -->
 			<div class="button-group">
 				<button type="button" on:click={handleCancel} class="btn-cancel">
 					Abbrechen
@@ -297,7 +360,32 @@
 		border-color: var(--accent-color);
 	}
 
-	/* Matrix Styling */
+	.input-with-button {
+		display: flex;
+		gap: 10px;
+	}
+
+	.input-with-button input {
+		flex: 1;
+		cursor: pointer;
+	}
+
+	.select-btn {
+		padding: 12px 24px;
+		background: var(--accent-color);
+		color: white;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 14px;
+		font-weight: 600;
+		white-space: nowrap;
+	}
+
+	.select-btn:hover {
+		background: var(--accent-hover);
+	}
+
 	.matrix-container {
 		overflow-x: auto;
 		-webkit-overflow-scrolling: touch;
@@ -363,7 +451,6 @@
 		outline: none;
 	}
 
-	/* Buttons */
 	.button-group {
 		display: flex;
 		gap: 15px;
@@ -405,7 +492,6 @@
 		background: var(--border-color);
 	}
 
-	/* iPad-Optimierung */
 	@media (max-width: 768px) {
 		.edit-container {
 			padding: 15px;
@@ -420,6 +506,14 @@
 		button {
 			font-size: 18px;
 			padding: 16px;
+		}
+
+		.input-with-button {
+			flex-direction: column;
+		}
+
+		.select-btn {
+			width: 100%;
 		}
 
 		.matrix-input {

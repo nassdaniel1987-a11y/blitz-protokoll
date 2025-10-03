@@ -127,6 +127,7 @@ export function getToday() {
 export function getEmptyProtokoll() {
 	return {
 		anwesenheit: '',
+		abwesend: '',  // NEU
 		wer_geht_essen: '',
 		leitung_im_haus: '',
 		spaetdienst: '',
@@ -140,11 +141,11 @@ export function getEmptyProtokoll() {
 				treffpunkt_4: '',
 				treffpunkt_kurz: '',
 				atelier: '',
-				hof: '',
 				werkstatt: '',
 				sporthalle: '',
 				gymnastikhalle: '',
-				computerraum: ''
+				computerraum: '',
+				hof: ''
 			},
 			'13:15-14:00': {
 				treffpunkt_1: '',
@@ -153,11 +154,11 @@ export function getEmptyProtokoll() {
 				treffpunkt_4: '',
 				treffpunkt_kurz: '',
 				atelier: '',
-				hof: '',
 				werkstatt: '',
 				sporthalle: '',
 				gymnastikhalle: '',
-				computerraum: ''
+				computerraum: '',
+				hof: ''
 			},
 			'14:00-14:30': {
 				treffpunkt_1: '',
@@ -166,11 +167,11 @@ export function getEmptyProtokoll() {
 				treffpunkt_4: '',
 				treffpunkt_kurz: '',
 				atelier: '',
-				hof: '',
 				werkstatt: '',
 				sporthalle: '',
 				gymnastikhalle: '',
-				computerraum: ''
+				computerraum: '',
+				hof: ''
 			}
 		}
 	};
