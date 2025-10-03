@@ -93,7 +93,7 @@
 			<p class="date">Datum: {currentDate}</p>
 		</div>
 
-		<form on:submit|preventDefault={handleSave}>
+		<form>
 			<!-- Allgemeine Informationen -->
 			<section class="section">
 				<h2>Allgemeine Informationen</h2>
@@ -201,7 +201,7 @@
 				<button type="button" on:click={handleCancel} class="btn-cancel">
 					Abbrechen
 				</button>
-				<button type="submit" disabled={saving} class="btn-save">
+				<button type="button" on:click={handleSave} disabled={saving} class="btn-save">
 					{saving ? 'Speichert...' : 'Speichern'}
 				</button>
 			</div>
