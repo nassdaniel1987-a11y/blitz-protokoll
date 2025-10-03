@@ -2,7 +2,7 @@
 	import { supabase } from '$lib/supabaseClient';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { getProtokoll, getToday } from '$lib/protokollService';
+	import { getProtokoll, getToday, deleteProtokoll } from '$lib/protokollService';
 	import { darkMode } from '$lib/darkModeStore';
 
 	let currentDate = getToday();
@@ -60,6 +60,22 @@
 		return date.toLocaleDateString('de-DE', options);
 	}
 
+	async function handleDelete() {
+		const confirmed = confirm(
+			`Möchtest du das Protokoll vom ${formatDate(currentDate)} wirklich löschen?\n\nDieser Vorgang kann nicht rückgängig gemacht werden!`
+		);
+		
+		if (!confirmed) return;
+
+		const success = await deleteProtokoll(currentDate);
+		if (success) {
+			alert('Protokoll gelöscht!');
+			await loadProtokoll();
+		} else {
+			alert('Fehler beim Löschen!');
+		}
+	}
+
 	async function handleLogout() {
 		await supabase.auth.signOut();
 		goto('/');
@@ -98,6 +114,9 @@
 			<div class="action-bar">
 				<button on:click={() => goto('/edit')} class="edit-btn">
 					✏️ Protokoll bearbeiten
+				</button>
+				<button on:click={handleDelete} class="delete-btn">
+					🗑️ Protokoll löschen
 				</button>
 			</div>
 
@@ -293,6 +312,9 @@
 	.action-bar {
 		margin-bottom: 20px;
 		text-align: right;
+		display: flex;
+		gap: 15px;
+		justify-content: flex-end;
 	}
 
 	.edit-btn {
@@ -307,6 +329,20 @@
 
 	.edit-btn:hover {
 		background: var(--accent-hover);
+	}
+
+	.delete-btn {
+		padding: 12px 24px;
+		background: #dc3545;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 16px;
+	}
+
+	.delete-btn:hover {
+		background: #c82333;
 	}
 
 	.section {
@@ -457,6 +493,15 @@
 
 		.section {
 			padding: 20px;
+		}
+
+		.action-bar {
+			flex-direction: column;
+		}
+
+		.edit-btn,
+		.delete-btn {
+			width: 100%;
 		}
 	}
 </style>

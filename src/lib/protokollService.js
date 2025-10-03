@@ -93,6 +93,25 @@ export async function saveProtokoll(datum, inhalt) {
 }
 
 /**
+ * Protokoll löschen
+ * @param {string} datum - Format: 'YYYY-MM-DD'
+ * @returns {boolean} true bei Erfolg, false bei Fehler
+ */
+export async function deleteProtokoll(datum) {
+	const { error } = await supabase
+		.from('protokolle')
+		.delete()
+		.eq('datum', datum);
+
+	if (error) {
+		console.error('Fehler beim Löschen:', error);
+		return false;
+	}
+
+	return true;
+}
+
+/**
  * Hilfsfunktion: Heutiges Datum im Format YYYY-MM-DD
  * @returns {string} Heutiges Datum
  */
