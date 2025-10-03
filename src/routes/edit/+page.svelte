@@ -5,6 +5,7 @@
 	import { page } from '$app/stores';
 	import { getProtokoll, saveProtokoll, getToday, getEmptyProtokoll } from '$lib/protokollService';
 	import { darkMode } from '$lib/darkModeStore';
+	import { toast } from '$lib/toastStore';
 	import PersonenAuswahlModal from '$lib/components/PersonenAuswahlModal.svelte';
 
 	let currentDate = getToday();
@@ -103,10 +104,12 @@
 		const result = await saveProtokoll(currentDate, formData);
 		
 		if (result) {
-			alert('Protokoll gespeichert!');
-			goto('/dashboard');
+			toast.show('Protokoll erfolgreich gespeichert!', 'success');
+			setTimeout(() => {
+				goto('/dashboard');
+			}, 500);
 		} else {
-			alert('Fehler beim Speichern!');
+			toast.show('Fehler beim Speichern des Protokolls!', 'error');
 		}
 		saving = false;
 	}

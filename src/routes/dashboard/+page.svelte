@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { getProtokoll, getToday, deleteProtokoll } from '$lib/protokollService';
 	import { darkMode } from '$lib/darkModeStore';
+	import { toast } from '$lib/toastStore';
 
 	let currentDate = getToday();
 	let protokoll = null;
@@ -70,10 +71,10 @@
 
 		const success = await deleteProtokoll(currentDate);
 		if (success) {
-			alert('Protokoll gelöscht!');
+			toast.show('Protokoll erfolgreich gelöscht!', 'success');
 			await loadProtokoll();
 		} else {
-			alert('Fehler beim Löschen!');
+			toast.show('Fehler beim Löschen des Protokolls!', 'error');
 		}
 	}
 
@@ -131,6 +132,10 @@
 					<div class="info-item">
 						<strong>Anwesenheit:</strong>
 						<span>{protokoll.inhalt.anwesenheit || '-'}</span>
+					</div>
+					<div class="info-item">
+						<strong>Abwesend:</strong>
+						<span>{protokoll.inhalt.abwesend || '-'}</span>
 					</div>
 					<div class="info-item">
 						<strong>Wer geht essen:</strong>

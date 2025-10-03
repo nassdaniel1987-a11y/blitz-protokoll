@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { getPersonen, savePersonen } from '$lib/einstellungenService';
 	import { darkMode } from '$lib/darkModeStore';
+	import { toast } from '$lib/toastStore';
 
 	let personen = [];
 	let neuerName = '';
@@ -38,9 +39,9 @@
 		saving = true;
 		const success = await savePersonen(personen);
 		if (success) {
-			alert('Einstellungen gespeichert!');
+			toast.show('Einstellungen erfolgreich gespeichert!', 'success');
 		} else {
-			alert('Fehler beim Speichern!');
+			toast.show('Fehler beim Speichern der Einstellungen!', 'error');
 		}
 		saving = false;
 	}
