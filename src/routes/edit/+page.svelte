@@ -12,7 +12,7 @@
 	let loading = true;
 	let saving = false;
 
-	// Raumliste
+	// Raumliste - HOF HINZUGEFÜGT
 	const raeume = [
 		'treffpunkt_1',
 		'treffpunkt_2',
@@ -23,13 +23,14 @@
 		'werkstatt',
 		'sporthalle',
 		'gymnastikhalle',
-		'computerraum'
+		'computerraum',
+		'hof'
 	];
 
 	// Zeitslots
 	const zeitslots = ['12:25-13:10', '13:15-14:00', '14:00-14:30'];
 
-	// Raum-Labels (schöner formatiert)
+	// Raum-Labels (schöner formatiert) - HOF HINZUGEFÜGT
 	const raumLabels = {
 		treffpunkt_1: 'Treffpunkt 1',
 		treffpunkt_2: 'Treffpunkt 2',
@@ -40,7 +41,8 @@
 		werkstatt: 'Werkstatt',
 		sporthalle: 'Sporthalle',
 		gymnastikhalle: 'Gymnastikhalle',
-		computerraum: 'Computerraum'
+		computerraum: 'Computerraum',
+		hof: 'Hof'
 	};
 
 	onMount(async () => {
@@ -62,9 +64,19 @@
 		const protokoll = await getProtokoll(currentDate);
 		if (protokoll) {
 			formData = protokoll.inhalt;
+		} else {
+			// Sicherstellen dass "hof" in leeren Protokollen existiert
+			formData = getEmptyProtokoll();
 		}
 		loading = false;
 	});
+
+	// Auto-resize für Textareas
+	function autoResize(event) {
+		const textarea = event.target;
+		textarea.style.height = 'auto';
+		textarea.style.height = textarea.scrollHeight + 'px';
+	}
 
 	async function handleSave() {
 		saving = true;
@@ -180,12 +192,13 @@
 										<td class="raum-label">{raumLabels[raum]}</td>
 										{#each zeitslots as slot}
 											<td>
-												<input 
-													type="text" 
+												<textarea
 													bind:value={formData.planung[slot][raum]}
 													placeholder="..."
 													class="matrix-input"
-												/>
+													rows="1"
+													on:input={autoResize}
+												></textarea>
 											</td>
 										{/each}
 									</tr>
@@ -301,6 +314,7 @@
 		border: 1px solid var(--border-color);
 		padding: 8px;
 		text-align: center;
+		vertical-align: top;
 	}
 
 	.matrix thead th {
@@ -338,6 +352,10 @@
 		box-sizing: border-box;
 		background: var(--bg-secondary);
 		color: var(--text-primary);
+		resize: none;
+		overflow: hidden;
+		min-height: 36px;
+		line-height: 1.4;
 	}
 
 	.matrix-input:focus {
