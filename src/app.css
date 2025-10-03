@@ -1,0 +1,33 @@
+/* src/app.css */
+:root {
+	--bg-primary: #f5f7fa;
+	--bg-secondary: #ffffff;
+	--text-primary: #333333;
+	--text-secondary: #666666;
+	--border-color: #e0e0e0;
+	--accent-color: #667eea;
+	--accent-hover: #5568d3;
+	--shadow: rgba(0, 0, 0, 0.1);
+}
+
+:root.dark {
+	--bg-primary: #1a1a1a;
+	--bg-secondary: #2d2d2d;
+	--text-primary: #e0e0e0;
+	--text-secondary: #b0b0b0;
+	--border-color: #404040;
+	--accent-color: #7c8adb;
+	--accent-hover: #8a97e3;
+	--shadow: rgba(0, 0, 0, 0.3);
+}
+
+* {
+	transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+body {
+	margin: 0;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+	background: var(--bg-primary);
+	color: var(--text-primary);
+}
