@@ -20,7 +20,8 @@
 		{ key: 'werkstatt', label: 'Werkstatt' },
 		{ key: 'sporthalle', label: 'Sporthalle' },
 		{ key: 'gymnastikhalle', label: 'Gymnastikhalle' },
-		{ key: 'computerraum', label: 'Computerraum' }
+		{ key: 'computerraum', label: 'Computerraum' },
+		{ key: 'hof', label: 'Hof' }
 	];
 
 	const zeitslots = ['12:25-13:10', '13:15-14:00', '14:00-14:30'];
@@ -86,6 +87,9 @@
 	<header class="header">
 		<h1>Blitz-Protokoll</h1>
 		<div class="header-actions">
+			<button on:click={() => goto('/settings')} class="settings-btn" title="Einstellungen">
+				⚙️
+			</button>
 			<button on:click={() => $darkMode = !$darkMode} class="dark-mode-toggle" title="Dark Mode umschalten">
 				{$darkMode ? '☀️' : '🌙'}
 			</button>
@@ -219,6 +223,20 @@
 		margin: 0;
 		color: var(--text-primary);
 		font-size: 1.8rem;
+	}
+
+	.settings-btn {
+		padding: 10px 14px;
+		background: var(--bg-primary);
+		border: 2px solid var(--border-color);
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 18px;
+		line-height: 1;
+	}
+
+	.settings-btn:hover {
+		background: var(--border-color);
 	}
 
 	.dark-mode-toggle {
