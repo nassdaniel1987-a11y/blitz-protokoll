@@ -4,6 +4,8 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { getProtokoll, saveProtokoll, getToday, getEmptyProtokoll } from '$lib/protokollService';
+	// NEU: getPersonen importieren
+	import { getPersonen } from '$lib/einstellungenService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
 	import PersonenAuswahlModal from '$lib/components/PersonenAuswahlModal.svelte';
@@ -13,13 +15,14 @@
 	let loading = true;
 	let saving = false;
 
-	// Modal States
+	// Nur noch ein Modal State
 	let showAnwesenheitModal = false;
-	let showAbwesendModal = false;
 	let anwesenheitArray = [];
-	let abwesendArray = [];
+	
+	// NEU: Variable für die komplette Personenliste
+	let allePersonen = [];
 
-	// Raumliste
+	// Raumliste (unverändert)
 	const raeume = [
 		'treffpunkt_1',
 		'treffpunkt_2',
@@ -33,9 +36,7 @@
 		'computerraum',
 		'hof'
 	];
-
 	const zeitslots = ['12:25-13:10', '13:15-14:00', '14:00-14:30'];
-
 	const raumLabels = {
 		treffpunkt_1: 'Treffpunkt 1',
 		treffpunkt_2: 'Treffpunkt 2',
@@ -57,6 +58,9 @@
 			return;
 		}
 
+		// NEU: Lade die komplette Personenliste
+		allePersonen = await getPersonen();
+
 		const urlParams = new URLSearchParams(window.location.search);
 		const dateParam = urlParams.get('date');
 		if (dateParam) {
@@ -67,7 +71,11 @@
 		if (protokoll) {
 			formData = protokoll.inhalt;
 			anwesenheitArray = parsePersonenString(formData.anwesenheit);
-			abwesendArray = parsePersonenString(formData.abwesend || '');
+			// Stelle sicher, dass das Abwesend-Feld auch initial korrekt ist, falls es manuell geändert wurde
+			if (!formData.abwesend) {
+				const abwesendePersonen = allePersonen.filter(p => !anwesenheitArray.includes(p));
+				formData.abwesend = arrayToString(abwesendePersonen);
+			}
 		} else {
 			formData = getEmptyProtokoll();
 		}
@@ -83,14 +91,14 @@
 		return arr.join(', ');
 	}
 
-	function handleAnwesenheitSelect(event) {
+	// Umbenannt und Logik angepasst
+	function handleAnwesenheitUpdate(event) {
 		anwesenheitArray = event.detail;
 		formData.anwesenheit = arrayToString(anwesenheitArray);
-	}
 
-	function handleAbwesendSelect(event) {
-		abwesendArray = event.detail;
-		formData.abwesend = arrayToString(abwesendArray);
+		// NEU: Leite die Abwesenden automatisch ab
+		const abwesendePersonen = allePersonen.filter(p => !anwesenheitArray.includes(p));
+		formData.abwesend = arrayToString(abwesendePersonen);
 	}
 
 	function autoResize(event) {
@@ -106,7 +114,8 @@
 		if (result) {
 			toast.show('Protokoll erfolgreich gespeichert!', 'success');
 			setTimeout(() => {
-				goto('/dashboard');
+				// GEÄNDERT: Gehe zur Dashboard-Seite mit dem korrekten Datum
+				goto(`/dashboard?date=${currentDate}`);
 			}, 500);
 		} else {
 			toast.show('Fehler beim Speichern des Protokolls!', 'error');
@@ -115,22 +124,16 @@
 	}
 
 	function handleCancel() {
-		goto('/dashboard');
+		// GEÄNDERT: Gehe zur Dashboard-Seite mit dem korrekten Datum
+		goto(`/dashboard?date=${currentDate}`);
 	}
 </script>
 
 <PersonenAuswahlModal 
 	bind:show={showAnwesenheitModal}
 	selectedPersonen={anwesenheitArray}
-	on:select={handleAnwesenheitSelect}
+	on:select={handleAnwesenheitUpdate}
 	on:close={() => showAnwesenheitModal = false}
-/>
-
-<PersonenAuswahlModal 
-	bind:show={showAbwesendModal}
-	selectedPersonen={abwesendArray}
-	on:select={handleAbwesendSelect}
-	on:close={() => showAbwesendModal = false}
 />
 
 <div class="edit-container">
@@ -142,7 +145,7 @@
 			<p class="date">Datum: {currentDate}</p>
 		</div>
 
-		<form>
+		<form on:submit|preventDefault={handleSave}>
 			<section class="section">
 				<h2>Allgemeine Informationen</h2>
 				
@@ -153,7 +156,7 @@
 							type="text" 
 							id="anwesenheit" 
 							bind:value={formData.anwesenheit}
-							placeholder="Klicken zum Auswählen..."
+							placeholder="Klicken, um Anwesenheit zu bearbeiten..."
 							on:click={() => showAnwesenheitModal = true}
 							readonly
 						/>
@@ -162,30 +165,21 @@
 							class="select-btn"
 							on:click={() => showAnwesenheitModal = true}
 						>
-							Auswählen
+							Anwesenheit bearbeiten
 						</button>
 					</div>
 				</div>
 
 				<div class="form-group">
-					<label for="abwesend">Abwesend</label>
-					<div class="input-with-button">
-						<input 
-							type="text" 
-							id="abwesend" 
-							bind:value={formData.abwesend}
-							placeholder="Klicken zum Auswählen..."
-							on:click={() => showAbwesendModal = true}
-							readonly
-						/>
-						<button 
-							type="button" 
-							class="select-btn"
-							on:click={() => showAbwesendModal = true}
-						>
-							Auswählen
-						</button>
-					</div>
+					<label for="abwesend">Abwesend (automatisch)</label>
+					<input 
+						type="text" 
+						id="abwesend" 
+						bind:value={formData.abwesend}
+						placeholder="Wird automatisch ausgefüllt..."
+						readonly
+						disabled
+					/>
 				</div>
 
 				<div class="form-group">
@@ -280,7 +274,7 @@
 				<button type="button" on:click={handleCancel} class="btn-cancel">
 					Abbrechen
 				</button>
-				<button type="button" on:click={handleSave} disabled={saving} class="btn-save">
+				<button type="submit" disabled={saving} class="btn-save">
 					{saving ? 'Speichert...' : 'Speichern'}
 				</button>
 			</div>
@@ -289,6 +283,12 @@
 </div>
 
 <style>
+	/* Hinzufügen für das deaktivierte Feld */
+	input:disabled {
+		background-color: var(--border-color);
+		cursor: not-allowed;
+	}
+
 	.edit-container {
 		padding: 20px;
 		max-width: 1400px;
