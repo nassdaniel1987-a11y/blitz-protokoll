@@ -138,14 +138,14 @@
   }
 
   .modal-content {
-    background: white;
+    background: var(--bg-secondary);
     border-radius: 12px;
     max-width: 600px;
     width: 100%;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 40px var(--shadow);
   }
 
   .modal-header {
@@ -153,20 +153,20 @@
     justify-content: space-between;
     align-items: center;
     padding: 1.5rem;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--border-color);
   }
 
   .modal-header h2 {
     margin: 0;
     font-size: 1.5rem;
-    color: #2c3e50;
+    color: var(--text-primary);
   }
 
   .close-btn {
     background: none;
     border: none;
     font-size: 2rem;
-    color: #95a5a6;
+    color: var(--text-secondary);
     cursor: pointer;
     padding: 0;
     width: 40px;
@@ -179,8 +179,8 @@
   }
 
   .close-btn:hover {
-    background: #ecf0f1;
-    color: #2c3e50;
+    background: var(--border-color);
+    color: var(--text-primary);
   }
 
   .modal-body {
@@ -192,7 +192,7 @@
   .hinweis {
     margin-top: 0;
     margin-bottom: 1.5rem;
-    color: #7f8c8d;
+    color: var(--text-secondary);
     font-size: 0.95rem;
   }
 
@@ -203,16 +203,16 @@
   }
 
   .raum-card {
-    border: 2px solid #ecf0f1;
+    border: 2px solid var(--border-color);
     border-radius: 8px;
     padding: 1rem;
-    background: #fafafa;
+    background: var(--bg-primary);
     transition: border-color 0.2s;
   }
 
   .raum-card:has(input:checked) {
-    border-color: #3498db;
-    background: #ebf5fb;
+    border-color: var(--accent-color);
+    background: var(--bg-primary);
   }
 
   .raum-header {
@@ -225,24 +225,24 @@
   .raum-header h3 {
     margin: 0;
     font-size: 1.1rem;
-    color: #2c3e50;
+    color: var(--text-primary);
   }
 
   .toggle-all-btn {
-    background: white;
-    border: 1px solid #bdc3c7;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     padding: 0.4rem 0.8rem;
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.85rem;
-    color: #555;
+    color: var(--text-primary);
     transition: all 0.2s;
   }
 
   .toggle-all-btn:hover {
-    background: #3498db;
+    background: var(--accent-color);
     color: white;
-    border-color: #3498db;
+    border-color: var(--accent-color);
   }
 
   .zeitslots-checkboxen {
@@ -257,13 +257,13 @@
     cursor: pointer;
     padding: 0.6rem;
     border-radius: 6px;
-    background: white;
+    background: var(--bg-secondary);
     transition: background 0.2s;
     user-select: none;
   }
 
   .checkbox-label:hover {
-    background: #f8f9fa;
+    background: var(--border-color);
   }
 
   .checkbox-label input[type="checkbox"] {
@@ -292,7 +292,7 @@
 
   .checkbox-text {
     font-size: 0.95rem;
-    color: #2c3e50;
+    color: var(--text-primary);
   }
 
   .modal-footer {
@@ -300,7 +300,7 @@
     justify-content: flex-end;
     gap: 1rem;
     padding: 1.5rem;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid var(--border-color);
   }
 
   .btn {
@@ -324,21 +324,22 @@
   }
 
   .btn-secondary {
-    background: #ecf0f1;
-    color: #2c3e50;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
   }
 
   .btn-secondary:hover {
-    background: #bdc3c7;
+    background: var(--border-color);
   }
 
   .btn-primary {
-    background: #3498db;
+    background: var(--accent-color);
     color: white;
   }
 
   .btn-primary:hover {
-    background: #2980b9;
+    background: var(--accent-hover);
   }
 
   .btn:active {
