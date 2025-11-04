@@ -72,7 +72,7 @@
   <div class="modal-content" on:click|stopPropagation>
     <div class="modal-header">
       <h2>{person} zuordnen</h2>
-      <button class="close-btn" on:click={handleClose}>×</button>
+      <button type="button" class="close-btn" on:click={handleClose}>×</button>
     </div>
 
     <div class="modal-body">
@@ -84,6 +84,7 @@
             <div class="raum-header">
               <h3>{raumLabels[raum]}</h3>
               <button
+                type="button"
                 class="toggle-all-btn"
                 on:click={() => toggleAlleZeitslots(raum)}
                 title="Alle auswählen/abwählen"
@@ -115,8 +116,8 @@
     </div>
 
     <div class="modal-footer">
-      <button class="btn btn-secondary" on:click={handleClose}>Abbrechen</button>
-      <button class="btn btn-primary" on:click={handleSave}>Speichern</button>
+      <button type="button" class="btn btn-secondary" on:click={handleClose}>Abbrechen</button>
+      <button type="button" class="btn btn-primary" on:click={handleSave}>Speichern</button>
     </div>
   </div>
 </div>
