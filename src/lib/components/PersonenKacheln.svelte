@@ -15,6 +15,7 @@
 
   // Reaktives Mapping: Person -> Anzahl zugeordneter Slots
   let zuordnungStatus = {};
+  let kachelKlassen = {};
 
   // Berechne für alle Personen die Zuordnungen - reaktiv!
   $: {
@@ -34,14 +35,20 @@
     });
   }
 
-  // Bestimme Farbe basierend auf Status
-  function getKachelClass(person) {
-    const status = zuordnungStatus[person] || 0;
+  // Berechne Farbklassen reaktiv basierend auf zuordnungStatus
+  $: {
+    kachelKlassen = {};
     const maxSlots = zeitslots.length;
-
-    if (status === 0) return 'nicht-zugeordnet';
-    if (status >= maxSlots) return 'vollstaendig';
-    return 'teilweise';
+    anwesendePersonen.forEach(person => {
+      const status = zuordnungStatus[person] || 0;
+      if (status === 0) {
+        kachelKlassen[person] = 'nicht-zugeordnet';
+      } else if (status >= maxSlots) {
+        kachelKlassen[person] = 'vollstaendig';
+      } else {
+        kachelKlassen[person] = 'teilweise';
+      }
+    });
   }
 
   function openModal(person) {
@@ -61,7 +68,7 @@
     {#each anwesendePersonen as person}
       <button
         type="button"
-        class="personen-kachel {getKachelClass(person)}"
+        class="personen-kachel {kachelKlassen[person] || 'nicht-zugeordnet'}"
         on:click={() => openModal(person)}
       >
         <span class="person-name">{person}</span>
