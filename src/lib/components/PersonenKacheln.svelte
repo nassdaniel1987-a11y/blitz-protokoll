@@ -57,6 +57,7 @@
   <div class="kacheln-grid">
     {#each anwesendePersonen as person}
       <button
+        type="button"
         class="personen-kachel {getKachelClass(person)}"
         on:click={() => openModal(person)}
       >
