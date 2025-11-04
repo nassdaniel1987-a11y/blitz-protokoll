@@ -9,7 +9,6 @@
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
 	import PersonenAuswahlModal from '$lib/components/PersonenAuswahlModal.svelte';
-	import PersonenKacheln from '$lib/components/PersonenKacheln.svelte';
 
 	let currentDate = getToday();
 	let formData = getEmptyProtokoll();
@@ -100,10 +99,6 @@
 		// NEU: Leite die Abwesenden automatisch ab
 		const abwesendePersonen = allePersonen.filter(p => !anwesenheitArray.includes(p));
 		formData.abwesend = arrayToString(abwesendePersonen);
-	}
-
-	function handlePlanungUpdate(event) {
-		formData.planung = event.detail;
 	}
 
 	function autoResize(event) {
@@ -238,22 +233,9 @@
 				</div>
 			</section>
 
-			{#if anwesenheitArray.length > 0}
-				<section class="section">
-					<PersonenKacheln
-						anwesendePersonen={anwesenheitArray}
-						planung={formData.planung}
-						{zeitslots}
-						{raeume}
-						{raumLabels}
-						on:update={handlePlanungUpdate}
-					/>
-				</section>
-			{/if}
-
 			<section class="section">
-				<h2>Belegungsplanung (Übersicht)</h2>
-
+				<h2>Belegungsplanung</h2>
+				
 				<div class="matrix-container">
 					<div class="matrix-scroll">
 						<table class="matrix">
