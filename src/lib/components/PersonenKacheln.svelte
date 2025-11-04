@@ -13,27 +13,30 @@
   let selectedPerson = null;
   let showModal = false;
 
-  // Berechne für jede Person, wie viele Zeitslots zugeordnet sind
-  function getZuordnungStatus(person) {
-    let zugeordneteSlots = 0;
+  // Reaktives Mapping: Person -> Anzahl zugeordneter Slots
+  let zuordnungStatus = {};
 
-    zeitslots.forEach(slot => {
-      raeume.forEach(raum => {
-        const inhalt = planung[slot]?.[raum] || '';
-        // Prüfe ob Person in diesem Raum/Zeitslot ist
-        const personen = inhalt.split(',').map(p => p.trim()).filter(p => p);
-        if (personen.includes(person)) {
-          zugeordneteSlots++;
-        }
+  // Berechne für alle Personen die Zuordnungen - reaktiv!
+  $: {
+    zuordnungStatus = {};
+    anwesendePersonen.forEach(person => {
+      let zugeordneteSlots = 0;
+      zeitslots.forEach(slot => {
+        raeume.forEach(raum => {
+          const inhalt = planung[slot]?.[raum] || '';
+          const personen = inhalt.split(',').map(p => p.trim()).filter(p => p);
+          if (personen.includes(person)) {
+            zugeordneteSlots++;
+          }
+        });
       });
+      zuordnungStatus[person] = zugeordneteSlots;
     });
-
-    return zugeordneteSlots;
   }
 
   // Bestimme Farbe basierend auf Status
   function getKachelClass(person) {
-    const status = getZuordnungStatus(person);
+    const status = zuordnungStatus[person] || 0;
     const maxSlots = zeitslots.length;
 
     if (status === 0) return 'nicht-zugeordnet';
@@ -62,7 +65,7 @@
         on:click={() => openModal(person)}
       >
         <span class="person-name">{person}</span>
-        <span class="status-badge">{getZuordnungStatus(person)}/{zeitslots.length}</span>
+        <span class="status-badge">{zuordnungStatus[person] || 0}/{zeitslots.length}</span>
       </button>
     {/each}
   </div>
@@ -90,14 +93,15 @@
   .kacheln-container {
     margin: 2rem 0;
     padding: 1.5rem;
-    background: #f8f9fa;
+    background: var(--bg-secondary);
     border-radius: 8px;
+    box-shadow: 0 2px 8px var(--shadow);
   }
 
   .kacheln-container h3 {
     margin-top: 0;
     margin-bottom: 1rem;
-    color: #2c3e50;
+    color: var(--text-primary);
   }
 
   .kacheln-grid {
@@ -115,7 +119,8 @@
     padding: 1.2rem 0.8rem;
     border: 2px solid transparent;
     border-radius: 8px;
-    background: white;
+    background: var(--bg-primary);
+    color: var(--text-primary);
     cursor: pointer;
     transition: all 0.2s ease;
     min-height: 80px;
@@ -134,7 +139,7 @@
 
   .personen-kachel:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px var(--shadow);
   }
 
   .personen-kachel:active {
@@ -150,14 +155,15 @@
     font-size: 0.85rem;
     padding: 0.25rem 0.6rem;
     border-radius: 12px;
-    background: rgba(0,0,0,0.05);
+    background: var(--border-color);
     font-weight: 500;
+    color: var(--text-primary);
   }
 
   /* Farbcodierung */
   .personen-kachel.nicht-zugeordnet {
     border-color: #3498db;
-    background: #ebf5fb;
+    background: var(--bg-primary);
   }
 
   .personen-kachel.nicht-zugeordnet .status-badge {
@@ -167,7 +173,7 @@
 
   .personen-kachel.teilweise {
     border-color: #f39c12;
-    background: #fef5e7;
+    background: var(--bg-primary);
   }
 
   .personen-kachel.teilweise .status-badge {
@@ -177,7 +183,7 @@
 
   .personen-kachel.vollstaendig {
     border-color: #27ae60;
-    background: #eafaf1;
+    background: var(--bg-primary);
   }
 
   .personen-kachel.vollstaendig .status-badge {
@@ -192,7 +198,8 @@
     flex-wrap: wrap;
     font-size: 0.9rem;
     padding-top: 1rem;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-secondary);
   }
 
   .legende-item {
