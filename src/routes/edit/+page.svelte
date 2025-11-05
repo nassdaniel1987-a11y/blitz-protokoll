@@ -3,18 +3,48 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { getProtokoll, saveProtokoll, getToday, getEmptyProtokoll } from '$lib/protokollService';
-	// NEU: getPersonen importieren
-	import { getPersonen } from '$lib/einstellungenService';
+	import { getProtokoll, saveProtokoll, getToday } from '$lib/protokollService';
+	// NEU: getPersonen und getRaeume importieren
+	import { getPersonen, getRaeume } from '$lib/einstellungenService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
 	import PersonenAuswahlModal from '$lib/components/PersonenAuswahlModal.svelte';
 	import PersonenKacheln from '$lib/components/PersonenKacheln.svelte';
 
 	let currentDate = getToday();
-	let formData = getEmptyProtokoll();
+	let formData = {
+		anwesenheit: '',
+		abwesend: '',
+		wer_geht_essen: '',
+		leitung_im_haus: '',
+		spaetdienst: '',
+		fruehdienst_naechster_tag: '',
+		sonstiges: '',
+		planung: {}
+	};
 	let loading = true;
 	let saving = false;
+
+	// Hilfsfunktion: Leeres Protokoll mit aktuellen Räumen erstellen
+	function createEmptyProtokoll() {
+		const planung = {};
+		zeitslots.forEach(slot => {
+			planung[slot] = {};
+			raeume.forEach(raum => {
+				planung[slot][raum] = '';
+			});
+		});
+		return {
+			anwesenheit: '',
+			abwesend: '',
+			wer_geht_essen: '',
+			leitung_im_haus: '',
+			spaetdienst: '',
+			fruehdienst_naechster_tag: '',
+			sonstiges: '',
+			planung
+		};
+	}
 
 	// Nur noch ein Modal State
 	let showAnwesenheitModal = false;
@@ -23,34 +53,12 @@
 	// NEU: Variable für die komplette Personenliste
 	let allePersonen = [];
 
-	// Raumliste (unverändert)
-	const raeume = [
-		'treffpunkt_1',
-		'treffpunkt_2',
-		'treffpunkt_3',
-		'treffpunkt_4',
-		'treffpunkt_kurz',
-		'atelier',
-		'werkstatt',
-		'sporthalle',
-		'gymnastikhalle',
-		'computerraum',
-		'hof'
-	];
+	// Raumliste - wird dynamisch geladen
+	let raumDaten = [];
+	let raeume = [];
+	let raumLabels = {};
+
 	const zeitslots = ['12:25-13:10', '13:15-14:00', '14:00-14:30'];
-	const raumLabels = {
-		treffpunkt_1: 'Treffpunkt 1',
-		treffpunkt_2: 'Treffpunkt 2',
-		treffpunkt_3: 'Treffpunkt 3',
-		treffpunkt_4: 'Treffpunkt 4',
-		treffpunkt_kurz: 'Treffpunkt kurz',
-		atelier: 'Atelier',
-		werkstatt: 'Werkstatt',
-		sporthalle: 'Sporthalle',
-		gymnastikhalle: 'Gymnastikhalle',
-		computerraum: 'Computerraum',
-		hof: 'Hof'
-	};
 
 	onMount(async () => {
 		const { data } = await supabase.auth.getSession();
@@ -59,8 +67,16 @@
 			return;
 		}
 
-		// NEU: Lade die komplette Personenliste
+		// NEU: Lade die komplette Personenliste und Raumliste
 		allePersonen = await getPersonen();
+		raumDaten = await getRaeume();
+
+		// Erstelle Arrays und Objekte für Räume
+		raeume = raumDaten.map(r => r.id);
+		raumLabels = raumDaten.reduce((acc, r) => {
+			acc[r.id] = r.label;
+			return acc;
+		}, {});
 
 		const urlParams = new URLSearchParams(window.location.search);
 		const dateParam = urlParams.get('date');
@@ -77,8 +93,20 @@
 				const abwesendePersonen = allePersonen.filter(p => !anwesenheitArray.includes(p));
 				formData.abwesend = arrayToString(abwesendePersonen);
 			}
+
+			// Stelle sicher, dass alle Zeitslots/Räume existieren
+			zeitslots.forEach(slot => {
+				if (!formData.planung[slot]) {
+					formData.planung[slot] = {};
+				}
+				raeume.forEach(raum => {
+					if (formData.planung[slot][raum] === undefined) {
+						formData.planung[slot][raum] = '';
+					}
+				});
+			});
 		} else {
-			formData = getEmptyProtokoll();
+			formData = createEmptyProtokoll();
 		}
 		loading = false;
 	});

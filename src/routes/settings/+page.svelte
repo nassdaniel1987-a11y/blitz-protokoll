@@ -2,12 +2,15 @@
 	import { supabase } from '$lib/supabaseClient';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { getPersonen, savePersonen } from '$lib/einstellungenService';
+	import { getPersonen, savePersonen, getRaeume, saveRaeume } from '$lib/einstellungenService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
 
 	let personen = [];
 	let neuerName = '';
+	let raeume = [];
+	let neuerRaumId = '';
+	let neuerRaumLabel = '';
 	let loading = true;
 	let saving = false;
 
@@ -19,8 +22,9 @@
 			return;
 		}
 
-		// Personen laden
+		// Personen und Räume laden
 		personen = await getPersonen();
+		raeume = await getRaeume();
 		loading = false;
 	});
 
@@ -35,10 +39,40 @@
 		personen = personen.filter((_, i) => i !== index);
 	}
 
+	function addRaum() {
+		if (neuerRaumLabel.trim()) {
+			// Erstelle ID aus Label (lowercase, Umlaute ersetzen, Leerzeichen durch _ ersetzen)
+			const id = neuerRaumId.trim() || neuerRaumLabel.trim()
+				.toLowerCase()
+				.replace(/ä/g, 'ae')
+				.replace(/ö/g, 'oe')
+				.replace(/ü/g, 'ue')
+				.replace(/ß/g, 'ss')
+				.replace(/\s+/g, '_')
+				.replace(/[^a-z0-9_]/g, '');
+
+			// Prüfe ob ID bereits existiert
+			if (raeume.some(r => r.id === id)) {
+				toast.show('Ein Raum mit dieser ID existiert bereits!', 'error');
+				return;
+			}
+
+			raeume = [...raeume, { id, label: neuerRaumLabel.trim() }];
+			neuerRaumId = '';
+			neuerRaumLabel = '';
+		}
+	}
+
+	function removeRaum(index) {
+		raeume = raeume.filter((_, i) => i !== index);
+	}
+
 	async function handleSave() {
 		saving = true;
-		const success = await savePersonen(personen);
-		if (success) {
+		const successPersonen = await savePersonen(personen);
+		const successRaeume = await saveRaeume(raeume);
+
+		if (successPersonen && successRaeume) {
 			toast.show('Einstellungen erfolgreich gespeichert!', 'success');
 		} else {
 			toast.show('Fehler beim Speichern der Einstellungen!', 'error');
@@ -92,12 +126,52 @@
 				</button>
 			</div>
 
-			<div class="button-group">
-				<button type="button" on:click={handleSave} disabled={saving} class="save-btn">
-					{saving ? 'Speichert...' : 'Speichern'}
+		</section>
+
+		<section class="section">
+			<h2>Raumliste</h2>
+			<p class="description">
+				Verwalte die Liste der Räume für die Planungsmatrix.
+			</p>
+
+			<div class="person-list">
+				{#each raeume as raum, index}
+					<div class="person-item">
+						<div class="raum-info">
+							<span class="person-name">{raum.label}</span>
+							<span class="raum-id">({raum.id})</span>
+						</div>
+						<button
+							type="button"
+							on:click={() => removeRaum(index)}
+							class="remove-btn"
+							title="Raum entfernen"
+						>
+							✕
+						</button>
+					</div>
+				{/each}
+			</div>
+
+			<div class="add-raum">
+				<input
+					type="text"
+					bind:value={neuerRaumLabel}
+					placeholder="Raumname (z.B. Turnhalle)..."
+					on:keydown={(e) => e.key === 'Enter' && addRaum()}
+					class="raum-label-input"
+				/>
+				<button type="button" on:click={addRaum} class="add-btn">
+					+ Hinzufügen
 				</button>
 			</div>
 		</section>
+
+		<div class="save-container">
+			<button type="button" on:click={handleSave} disabled={saving} class="save-btn">
+				{saving ? 'Speichert...' : 'Alle Einstellungen speichern'}
+			</button>
+		</div>
 	{/if}
 </div>
 
@@ -241,9 +315,48 @@
 		background: var(--accent-hover);
 	}
 
-	.button-group {
+	.save-container {
+		max-width: 800px;
+		margin: 30px auto 0;
 		display: flex;
 		justify-content: flex-end;
+	}
+
+	.add-raum {
+		display: flex;
+		gap: 10px;
+		margin-bottom: 20px;
+	}
+
+	.add-raum input {
+		flex: 1;
+		padding: 12px;
+		border: 2px solid var(--border-color);
+		border-radius: 8px;
+		font-size: 16px;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+	}
+
+	.add-raum input:focus {
+		outline: none;
+		border-color: var(--accent-color);
+	}
+
+	.raum-info {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+	}
+
+	.raum-id {
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		font-family: monospace;
+	}
+
+	.section + .section {
+		margin-top: 30px;
 	}
 
 	.save-btn {
@@ -283,6 +396,18 @@
 		}
 
 		.add-btn {
+			width: 100%;
+		}
+
+		.add-raum {
+			flex-direction: column;
+		}
+
+		.save-container {
+			padding: 0 20px;
+		}
+
+		.save-btn {
 			width: 100%;
 		}
 	}
