@@ -75,10 +75,14 @@
 		await supabase.auth.signOut();
 		goto('/');
 	}
+
+	function handlePrint() {
+		window.print();
+	}
 </script>
 
 <div class="dashboard">
-	<header class="header">
+	<header class="header no-print">
 		<h1>Blitz-Protokoll</h1>
 		<div class="header-actions">
 			<button on:click={() => goto('/settings')} class="settings-btn" title="Einstellungen">
@@ -92,7 +96,7 @@
 	</header>
 
 	<!-- Datumsnavigation -->
-	<div class="date-nav">
+	<div class="date-nav no-print">
 		<button on:click={() => changeDate(-1)} class="nav-btn">← Vorheriger Tag</button>
 		<div class="current-date">
 			<h2>{formatDate(currentDate)}</h2>
@@ -108,8 +112,17 @@
 		<div class="loading">Lade Protokoll...</div>
 	{:else if protokoll}
 		<div class="protokoll-content">
+			<!-- Druck-Header (nur beim Drucken sichtbar) -->
+			<div class="print-header">
+				<h1>Blitz-Protokoll</h1>
+				<h2>{formatDate(currentDate)}</h2>
+			</div>
+
 			<!-- Bearbeiten Button -->
-			<div class="action-bar">
+			<div class="action-bar no-print">
+				<button on:click={handlePrint} class="print-btn">
+					🖨️ Drucken / PDF
+				</button>
 				<button on:click={() => goto(`/edit?date=${currentDate}`)} class="edit-btn">
 					✏️ Protokoll bearbeiten
 				</button>
@@ -516,8 +529,167 @@
 		}
 
 		.edit-btn,
-		.delete-btn {
+		.delete-btn,
+		.print-btn {
 			width: 100%;
+		}
+	}
+
+	/* Druck-Styles */
+	.print-header {
+		display: none;
+	}
+
+	.print-btn {
+		padding: 12px 24px;
+		background: #28a745;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 16px;
+	}
+
+	.print-btn:hover {
+		background: #218838;
+	}
+
+	@media print {
+		/* Querformat */
+		@page {
+			size: landscape;
+			margin: 1.5cm;
+		}
+
+		/* Verstecke Elemente, die nicht gedruckt werden sollen */
+		.no-print {
+			display: none !important;
+		}
+
+		/* Zeige Druck-Header */
+		.print-header {
+			display: block;
+			text-align: center;
+			margin-bottom: 2rem;
+			padding-bottom: 1rem;
+			border-bottom: 3px solid #3498db;
+		}
+
+		.print-header h1 {
+			margin: 0 0 0.5rem 0;
+			color: #2c3e50;
+			font-size: 2rem;
+		}
+
+		.print-header h2 {
+			margin: 0;
+			color: #555;
+			font-size: 1.3rem;
+			font-weight: normal;
+		}
+
+		/* Dashboard Anpassungen */
+		.dashboard {
+			background: white;
+			padding: 0;
+			min-height: auto;
+		}
+
+		.protokoll-content {
+			max-width: none;
+			margin: 0;
+		}
+
+		/* Sections */
+		.section {
+			background: white;
+			box-shadow: none;
+			padding: 1.5rem;
+			margin-bottom: 1.5rem;
+			border: 2px solid #ddd;
+			border-radius: 8px;
+			page-break-inside: avoid;
+		}
+
+		h3 {
+			color: #2c3e50;
+			font-size: 1.2rem;
+			margin-top: 0;
+			border-bottom: 2px solid #3498db;
+			padding-bottom: 0.5rem;
+		}
+
+		/* Info Grid */
+		.info-grid {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 1rem;
+		}
+
+		.info-item {
+			break-inside: avoid;
+		}
+
+		.info-item strong {
+			color: #555;
+			font-size: 0.85rem;
+		}
+
+		.info-item span {
+			color: #000;
+			font-size: 0.95rem;
+		}
+
+		/* Tabelle */
+		.table-container {
+			overflow: visible;
+		}
+
+		.planung-table {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 0.85rem;
+		}
+
+		.planung-table th,
+		.planung-table td {
+			border: 1px solid #333;
+			padding: 0.6rem;
+			text-align: left;
+		}
+
+		.planung-table thead th {
+			background: #3498db !important;
+			color: white !important;
+			font-weight: 600;
+			-webkit-print-color-adjust: exact;
+			print-color-adjust: exact;
+		}
+
+		.raum-label {
+			background: #f0f0f0 !important;
+			font-weight: 600;
+			color: #000 !important;
+			-webkit-print-color-adjust: exact;
+			print-color-adjust: exact;
+		}
+
+		.planung-table td {
+			color: #000;
+		}
+
+		/* Seitenumbrüche optimieren */
+		.section {
+			page-break-inside: avoid;
+		}
+
+		.planung-table {
+			page-break-inside: auto;
+		}
+
+		.planung-table tr {
+			page-break-inside: avoid;
+			page-break-after: auto;
 		}
 	}
 </style>
