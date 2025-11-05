@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { getProtokoll, getToday, deleteProtokoll } from '$lib/protokollService';
+	import { getRaeume } from '$lib/einstellungenService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
 
@@ -10,20 +11,8 @@
 	let protokoll = null;
 	let loading = true;
 
-	// Raumliste
-	const raeume = [
-		{ key: 'treffpunkt_1', label: 'Treffpunkt 1' },
-		{ key: 'treffpunkt_2', label: 'Treffpunkt 2' },
-		{ key: 'treffpunkt_3', label: 'Treffpunkt 3' },
-		{ key: 'treffpunkt_4', label: 'Treffpunkt 4' },
-		{ key: 'treffpunkt_kurz', label: 'Treffpunkt kurz' },
-		{ key: 'atelier', label: 'Atelier' },
-		{ key: 'werkstatt', label: 'Werkstatt' },
-		{ key: 'sporthalle', label: 'Sporthalle' },
-		{ key: 'gymnastikhalle', label: 'Gymnastikhalle' },
-		{ key: 'computerraum', label: 'Computerraum' },
-		{ key: 'hof', label: 'Hof' }
-	];
+	// Raumliste - wird dynamisch geladen
+	let raeume = [];
 
 	const zeitslots = ['12:25-13:10', '13:15-14:00', '14:00-14:30'];
 
@@ -34,6 +23,10 @@
 			goto('/');
 			return;
 		}
+
+		// Räume laden
+		const raumDaten = await getRaeume();
+		raeume = raumDaten.map(r => ({ key: r.id, label: r.label }));
 
 		await loadProtokoll();
 	});
@@ -180,7 +173,7 @@
 								<tr>
 									<td class="raum-label">{raum.label}</td>
 									{#each zeitslots as slot}
-										<td>{protokoll.inhalt.planung[slot][raum.key] || '-'}</td>
+										<td>{protokoll.inhalt.planung[slot]?.[raum.key] || '-'}</td>
 									{/each}
 								</tr>
 							{/each}
