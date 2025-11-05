@@ -555,10 +555,10 @@
 	}
 
 	@media print {
-		/* Querformat */
+		/* Querformat mit minimalen Rändern */
 		@page {
 			size: landscape;
-			margin: 1.5cm;
+			margin: 0.8cm;
 		}
 
 		/* Verstecke Elemente, die nicht gedruckt werden sollen */
@@ -566,25 +566,25 @@
 			display: none !important;
 		}
 
-		/* Zeige Druck-Header */
+		/* Zeige Druck-Header - kompakter */
 		.print-header {
 			display: block;
 			text-align: center;
-			margin-bottom: 2rem;
-			padding-bottom: 1rem;
-			border-bottom: 3px solid #3498db;
+			margin-bottom: 0.8rem;
+			padding-bottom: 0.5rem;
+			border-bottom: 2px solid #3498db;
 		}
 
 		.print-header h1 {
-			margin: 0 0 0.5rem 0;
+			margin: 0 0 0.3rem 0;
 			color: #2c3e50;
-			font-size: 2rem;
+			font-size: 1.5rem;
 		}
 
 		.print-header h2 {
 			margin: 0;
 			color: #555;
-			font-size: 1.3rem;
+			font-size: 1rem;
 			font-weight: normal;
 		}
 
@@ -600,30 +600,30 @@
 			margin: 0;
 		}
 
-		/* Sections */
+		/* Sections - kompakter */
 		.section {
 			background: white;
 			box-shadow: none;
-			padding: 1.5rem;
-			margin-bottom: 1.5rem;
-			border: 2px solid #ddd;
-			border-radius: 8px;
+			padding: 0.8rem;
+			margin-bottom: 0.8rem;
+			border: 1px solid #ccc;
+			border-radius: 4px;
 			page-break-inside: avoid;
 		}
 
 		h3 {
 			color: #2c3e50;
-			font-size: 1.2rem;
-			margin-top: 0;
+			font-size: 0.95rem;
+			margin: 0 0 0.5rem 0;
 			border-bottom: 2px solid #3498db;
-			padding-bottom: 0.5rem;
+			padding-bottom: 0.3rem;
 		}
 
-		/* Info Grid */
+		/* Info Grid - noch kompakter */
 		.info-grid {
 			display: grid;
 			grid-template-columns: repeat(3, 1fr);
-			gap: 1rem;
+			gap: 0.5rem;
 		}
 
 		.info-item {
@@ -632,15 +632,20 @@
 
 		.info-item strong {
 			color: #555;
-			font-size: 0.85rem;
+			font-size: 0.7rem;
 		}
 
 		.info-item span {
 			color: #000;
-			font-size: 0.95rem;
+			font-size: 0.75rem;
+			line-height: 1.2;
 		}
 
-		/* Tabelle */
+		.info-item.full-width {
+			grid-column: 1 / -1;
+		}
+
+		/* Tabelle - kompakt für eine Seite */
 		.table-container {
 			overflow: visible;
 		}
@@ -648,20 +653,22 @@
 		.planung-table {
 			width: 100%;
 			border-collapse: collapse;
-			font-size: 0.85rem;
+			font-size: 0.65rem;
 		}
 
 		.planung-table th,
 		.planung-table td {
 			border: 1px solid #333;
-			padding: 0.6rem;
+			padding: 0.3rem 0.4rem;
 			text-align: left;
+			line-height: 1.2;
 		}
 
 		.planung-table thead th {
 			background: #3498db !important;
 			color: white !important;
 			font-weight: 600;
+			font-size: 0.7rem;
 			-webkit-print-color-adjust: exact;
 			print-color-adjust: exact;
 		}
@@ -670,6 +677,7 @@
 			background: #f0f0f0 !important;
 			font-weight: 600;
 			color: #000 !important;
+			font-size: 0.7rem;
 			-webkit-print-color-adjust: exact;
 			print-color-adjust: exact;
 		}
@@ -678,18 +686,27 @@
 			color: #000;
 		}
 
-		/* Seitenumbrüche optimieren */
+		/* Alles auf einer Seite halten */
+		.dashboard,
+		.protokoll-content {
+			page-break-inside: avoid;
+		}
+
 		.section {
 			page-break-inside: avoid;
 		}
 
 		.planung-table {
-			page-break-inside: auto;
+			page-break-inside: avoid;
 		}
 
 		.planung-table tr {
 			page-break-inside: avoid;
-			page-break-after: auto;
+		}
+
+		/* Falls es doch zu groß wird, skalieren */
+		body {
+			zoom: 0.95;
 		}
 	}
 </style>
