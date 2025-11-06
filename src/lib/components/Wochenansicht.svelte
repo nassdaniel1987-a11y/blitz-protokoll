@@ -27,8 +27,10 @@
 
 <div class="wochenansicht">
 	<h2>Wochenübersicht</h2>
+	<p class="scroll-hint">← Horizontal scrollen um alle Tage zu sehen →</p>
 
-	<div class="woche-grid">
+	<div class="woche-scroll-container">
+		<div class="woche-grid">
 		{#each wochenDaten as tag}
 			<div class="tag-card" class:has-protokoll={tag.protokoll} on:click={() => navigateToDay(tag.datum)}>
 				<div class="tag-header">
@@ -79,7 +81,7 @@
 									</tr>
 								</thead>
 								<tbody>
-									{#each raeume.slice(0, 5) as raum}
+									{#each raeume as raum}
 										<tr>
 											<td class="mini-raum-label">{raum.label}</td>
 											{#each zeitslots as slot}
@@ -93,11 +95,6 @@
 											{/each}
 										</tr>
 									{/each}
-									{#if raeume.length > 5}
-										<tr>
-											<td colspan="4" class="more-rooms">+ {raeume.length - 5} weitere</td>
-										</tr>
-									{/if}
 								</tbody>
 							</table>
 						</div>
@@ -112,25 +109,42 @@
 				{/if}
 			</div>
 		{/each}
+		</div>
 	</div>
 </div>
 
 <style>
 	.wochenansicht {
-		max-width: 1400px;
+		max-width: 100%;
 		margin: 0 auto;
 	}
 
 	h2 {
 		color: var(--text-primary);
-		margin-bottom: 1.5rem;
+		margin-bottom: 0.5rem;
 		font-size: 1.5rem;
+		text-align: center;
+	}
+
+	.scroll-hint {
+		text-align: center;
+		color: var(--text-secondary);
+		font-size: 0.9rem;
+		margin-bottom: 1rem;
+	}
+
+	.woche-scroll-container {
+		overflow-x: auto;
+		overflow-y: hidden;
+		padding: 1rem 0;
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.woche-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		display: flex;
 		gap: 1.5rem;
+		padding: 0 1rem;
+		min-width: min-content;
 	}
 
 	.tag-card {
@@ -141,6 +155,8 @@
 		cursor: pointer;
 		transition: transform 0.2s, box-shadow 0.2s;
 		border: 2px solid transparent;
+		min-width: 350px;
+		flex-shrink: 0;
 	}
 
 	.tag-card:hover {
@@ -284,13 +300,6 @@
 	.cell-empty {
 		color: var(--border-color);
 		font-size: 1rem;
-	}
-
-	.more-rooms {
-		text-align: center;
-		font-style: italic;
-		color: var(--text-secondary);
-		font-size: 0.7rem;
 	}
 
 	/* Kein Protokoll */
