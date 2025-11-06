@@ -21,7 +21,7 @@
 	}
 
 	function navigateToDay(datum) {
-		goto(`/dashboard?date=${datum}`);
+		goto(`/edit?date=${datum}`);
 	}
 </script>
 
