@@ -6,13 +6,10 @@
 	import { getRaeume } from '$lib/einstellungenService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
-	import Wochenansicht from '$lib/components/Wochenansicht.svelte';
 
 	let currentDate = getToday();
 	let protokoll = null;
 	let loading = true;
-	let viewMode = 'day'; // 'day' oder 'week'
-	let wochenDaten = [];
 
 	// Raumliste - wird dynamisch geladen
 	let raeume = [];
@@ -38,34 +35,6 @@
 		loading = true;
 		protokoll = await getProtokoll(currentDate);
 		loading = false;
-	}
-
-	async function loadWoche() {
-		loading = true;
-		const date = new Date(currentDate);
-		const dayOfWeek = (date.getDay() + 6) % 7; // Montag = 0
-		const monday = new Date(date);
-		monday.setDate(date.getDate() - dayOfWeek);
-
-		const woche = [];
-		for (let i = 0; i < 5; i++) {
-			const day = new Date(monday);
-			day.setDate(monday.getDate() + i);
-			const datum = day.toISOString().split('T')[0];
-			const protokoll = await getProtokoll(datum);
-			woche.push({ datum, protokoll });
-		}
-		wochenDaten = woche;
-		loading = false;
-	}
-
-	async function switchView(mode) {
-		viewMode = mode;
-		if (mode === 'week') {
-			await loadWoche();
-		} else {
-			await loadProtokoll();
-		}
 	}
 
 	function changeDate(days) {
@@ -126,26 +95,7 @@
 		</div>
 	</header>
 
-	<!-- View Toggle -->
-	<div class="view-toggle no-print">
-		<button
-			class="toggle-btn"
-			class:active={viewMode === 'day'}
-			on:click={() => switchView('day')}
-		>
-			📅 Tagesansicht
-		</button>
-		<button
-			class="toggle-btn"
-			class:active={viewMode === 'week'}
-			on:click={() => switchView('week')}
-		>
-			📆 Wochenansicht
-		</button>
-	</div>
-
-	<!-- Datumsnavigation (nur in Tagesansicht) -->
-	{#if viewMode === 'day'}
+	<!-- Datumsnavigation -->
 	<div class="date-nav no-print">
 		<button on:click={() => changeDate(-1)} class="nav-btn">← Vorheriger Tag</button>
 		<div class="current-date">
@@ -156,13 +106,11 @@
 		</div>
 		<button on:click={() => changeDate(1)} class="nav-btn">Nächster Tag →</button>
 	</div>
-	{/if}
 
-	<!-- Tagesansicht -->
-	{#if viewMode === 'day'}
-		{#if loading}
-			<div class="loading">Lade Protokoll...</div>
-		{:else if protokoll}
+	<!-- Protokoll-Inhalt -->
+	{#if loading}
+		<div class="loading">Lade Protokoll...</div>
+	{:else if protokoll}
 		<div class="protokoll-content">
 			<!-- Druck-Header (nur beim Drucken sichtbar) -->
 			<div class="print-header">
@@ -246,24 +194,14 @@
 					</table>
 				</div>
 			</section>
-			</div>
-		{:else}
-			<div class="no-protokoll">
-				<p>📝 Für diesen Tag ist noch kein Protokoll vorhanden.</p>
-				<button on:click={() => goto(`/edit?date=${currentDate}`)} class="create-btn">
-					Neues Protokoll erstellen
-				</button>
-			</div>
-		{/if}
-	{/if}
-
-	<!-- Wochenansicht -->
-	{#if viewMode === 'week'}
-		{#if loading}
-			<div class="loading">Lade Wochendaten...</div>
-		{:else}
-			<Wochenansicht {wochenDaten} {raeume} />
-		{/if}
+		</div>
+	{:else}
+		<div class="no-protokoll">
+			<p>📝 Für diesen Tag ist noch kein Protokoll vorhanden.</p>
+			<button on:click={() => goto(`/edit?date=${currentDate}`)} class="create-btn">
+				Neues Protokoll erstellen
+			</button>
+		</div>
 	{/if}
 </div>
 
@@ -338,41 +276,6 @@
 
 	.logout-btn:hover {
 		background: #555;
-	}
-
-	/* View Toggle */
-	.view-toggle {
-		max-width: 1400px;
-		margin: 0 auto 20px;
-		display: flex;
-		justify-content: center;
-		gap: 10px;
-		background: var(--bg-secondary);
-		padding: 15px;
-		border-radius: 12px;
-		box-shadow: 0 2px 8px var(--shadow);
-	}
-
-	.toggle-btn {
-		padding: 10px 24px;
-		background: var(--bg-primary);
-		color: var(--text-primary);
-		border: 2px solid var(--border-color);
-		border-radius: 8px;
-		cursor: pointer;
-		font-size: 16px;
-		font-weight: 500;
-		transition: all 0.2s;
-	}
-
-	.toggle-btn:hover {
-		background: var(--border-color);
-	}
-
-	.toggle-btn.active {
-		background: var(--accent-color);
-		color: white;
-		border-color: var(--accent-color);
 	}
 
 	/* Datumsnavigation */
