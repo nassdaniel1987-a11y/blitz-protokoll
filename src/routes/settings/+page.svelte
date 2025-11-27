@@ -2,7 +2,7 @@
 	import { supabase } from '$lib/supabaseClient';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { getPersonen, savePersonen, getRaeume, saveRaeume } from '$lib/einstellungenService';
+	import { getPersonen, savePersonen, getRaeume, saveRaeume, getVorlagen, saveVorlagen } from '$lib/einstellungenService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
 
@@ -11,6 +11,7 @@
 	let raeume = [];
 	let neuerRaumId = '';
 	let neuerRaumLabel = '';
+	let vorlagen = [];
 	let loading = true;
 	let saving = false;
 
@@ -22,9 +23,10 @@
 			return;
 		}
 
-		// Personen und Räume laden
+		// Personen, Räume und Vorlagen laden
 		personen = await getPersonen();
 		raeume = await getRaeume();
+		vorlagen = await getVorlagen();
 		loading = false;
 	});
 
@@ -65,6 +67,27 @@
 
 	function removeRaum(index) {
 		raeume = raeume.filter((_, i) => i !== index);
+	}
+
+	async function removeVorlage(index) {
+		const vorlage = vorlagen[index];
+		if (confirm(`Vorlage "${vorlage.name}" wirklich löschen?`)) {
+			vorlagen = vorlagen.filter((_, i) => i !== index);
+			const success = await saveVorlagen(vorlagen);
+			if (success) {
+				toast.show('Vorlage erfolgreich gelöscht!', 'success');
+			} else {
+				toast.show('Fehler beim Löschen der Vorlage!', 'error');
+			}
+		}
+	}
+
+	function createVorlage() {
+		goto('/vorlagen/edit');
+	}
+
+	function editVorlage(id) {
+		goto(`/vorlagen/edit?id=${id}`);
 	}
 
 	async function handleSave() {
@@ -163,6 +186,50 @@
 				/>
 				<button type="button" on:click={addRaum} class="add-btn">
 					+ Hinzufügen
+				</button>
+			</div>
+		</section>
+
+		<section class="section">
+			<h2>Tagesvorlagen</h2>
+			<p class="description">
+				Erstelle Vorlagen für wiederkehrende Tagesstrukturen (z.B. "Montag", "Freitag Kurz").
+				Diese Vorlagen können beim Erstellen neuer Protokolle als Ausgangspunkt verwendet werden.
+			</p>
+
+			{#if vorlagen.length === 0}
+				<p class="no-vorlagen">Noch keine Vorlagen vorhanden.</p>
+			{:else}
+				<div class="person-list">
+					{#each vorlagen as vorlage, index}
+						<div class="person-item">
+							<span class="person-name">{vorlage.name}</span>
+							<div class="vorlage-actions">
+								<button
+									type="button"
+									on:click={() => editVorlage(vorlage.id)}
+									class="edit-btn"
+									title="Vorlage bearbeiten"
+								>
+									✎
+								</button>
+								<button
+									type="button"
+									on:click={() => removeVorlage(index)}
+									class="remove-btn"
+									title="Vorlage löschen"
+								>
+									✕
+								</button>
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
+
+			<div class="add-vorlage">
+				<button type="button" on:click={createVorlage} class="add-btn vorlage-add-btn">
+					+ Neue Vorlage erstellen
 				</button>
 			</div>
 		</section>
@@ -377,6 +444,40 @@
 	.save-btn:disabled {
 		background: #ccc;
 		cursor: not-allowed;
+	}
+
+	.no-vorlagen {
+		color: var(--text-secondary);
+		font-style: italic;
+		margin-bottom: 20px;
+	}
+
+	.vorlage-actions {
+		display: flex;
+		gap: 8px;
+	}
+
+	.edit-btn {
+		padding: 4px 10px;
+		background: var(--accent-color);
+		color: white;
+		border: none;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 16px;
+		line-height: 1;
+	}
+
+	.edit-btn:hover {
+		background: var(--accent-hover);
+	}
+
+	.add-vorlage {
+		margin-top: 20px;
+	}
+
+	.vorlage-add-btn {
+		width: 100%;
 	}
 
 	/* iPad-Optimierung */

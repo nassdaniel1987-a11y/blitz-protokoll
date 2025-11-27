@@ -5,7 +5,7 @@
 	import { page } from '$app/stores';
 	import { getProtokoll, saveProtokoll, getToday } from '$lib/protokollService';
 	// NEU: getPersonen und getRaeume importieren
-	import { getPersonen, getRaeume } from '$lib/einstellungenService';
+	import { getPersonen, getRaeume, getVorlagen } from '$lib/einstellungenService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
 	import PersonenAuswahlModal from '$lib/components/PersonenAuswahlModal.svelte';
@@ -58,6 +58,11 @@
 	let raeume = [];
 	let raumLabels = {};
 
+	// Vorlagen
+	let vorlagen = [];
+	let selectedVorlageId = '';
+	let isNewProtokoll = true;
+
 	const zeitslots = ['12:25-13:10', '13:15-14:00', '14:00-14:30'];
 
 	onMount(async () => {
@@ -70,6 +75,7 @@
 		// NEU: Lade die komplette Personenliste und Raumliste
 		allePersonen = await getPersonen();
 		raumDaten = await getRaeume();
+		vorlagen = await getVorlagen();
 
 		// Erstelle Arrays und Objekte für Räume
 		raeume = raumDaten.map(r => r.id);
@@ -86,6 +92,7 @@
 
 		const protokoll = await getProtokoll(currentDate);
 		if (protokoll) {
+			isNewProtokoll = false;
 			formData = protokoll.inhalt;
 			anwesenheitArray = parsePersonenString(formData.anwesenheit);
 			// Stelle sicher, dass das Abwesend-Feld auch initial korrekt ist, falls es manuell geändert wurde
@@ -106,6 +113,7 @@
 				});
 			});
 		} else {
+			isNewProtokoll = true;
 			formData = createEmptyProtokoll();
 		}
 		loading = false;
@@ -225,6 +233,31 @@
 		// GEÄNDERT: Gehe zur Dashboard-Seite mit dem korrekten Datum
 		goto(`/dashboard?date=${currentDate}`);
 	}
+
+	function applyVorlage() {
+		if (!selectedVorlageId) return;
+
+		const vorlage = vorlagen.find(v => v.id === selectedVorlageId);
+		if (!vorlage) return;
+
+		// Kopiere die Vorlage in formData
+		formData = JSON.parse(JSON.stringify(vorlage.inhalt));
+		anwesenheitArray = parsePersonenString(formData.anwesenheit);
+
+		// Stelle sicher, dass alle Zeitslots/Räume existieren
+		zeitslots.forEach(slot => {
+			if (!formData.planung[slot]) {
+				formData.planung[slot] = {};
+			}
+			raeume.forEach(raum => {
+				if (formData.planung[slot][raum] === undefined) {
+					formData.planung[slot][raum] = '';
+				}
+			});
+		});
+
+		toast.show(`Vorlage "${vorlage.name}" wurde angewendet!`, 'success');
+	}
 </script>
 
 <PersonenAuswahlModal 
@@ -242,6 +275,31 @@
 			<h1>Protokoll bearbeiten</h1>
 			<p class="date">Datum: {currentDate}</p>
 		</div>
+
+		{#if isNewProtokoll && vorlagen.length > 0}
+			<section class="section vorlage-section">
+				<h2>Aus Vorlage erstellen</h2>
+				<p class="vorlage-description">
+					Du kannst eine vorhandene Vorlage als Ausgangspunkt verwenden.
+				</p>
+				<div class="vorlage-auswahl">
+					<select bind:value={selectedVorlageId} class="vorlage-select">
+						<option value="">-- Keine Vorlage verwenden --</option>
+						{#each vorlagen as vorlage}
+							<option value={vorlage.id}>{vorlage.name}</option>
+						{/each}
+					</select>
+					<button
+						type="button"
+						on:click={applyVorlage}
+						disabled={!selectedVorlageId}
+						class="vorlage-apply-btn"
+					>
+						Vorlage anwenden
+					</button>
+				</div>
+			</section>
+		{/if}
 
 		<form on:submit|preventDefault={handleSave}>
 			<section class="section">
@@ -762,6 +820,59 @@
 		border-left: 3px solid #3498db;
 	}
 
+	.vorlage-section {
+		border-left: 4px solid var(--accent-color);
+	}
+
+	.vorlage-description {
+		color: var(--text-secondary);
+		margin-bottom: 20px;
+		font-size: 0.95rem;
+	}
+
+	.vorlage-auswahl {
+		display: flex;
+		gap: 10px;
+		align-items: center;
+	}
+
+	.vorlage-select {
+		flex: 1;
+		padding: 12px;
+		border: 2px solid var(--border-color);
+		border-radius: 8px;
+		font-size: 16px;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		cursor: pointer;
+	}
+
+	.vorlage-select:focus {
+		outline: none;
+		border-color: var(--accent-color);
+	}
+
+	.vorlage-apply-btn {
+		padding: 12px 24px;
+		background: var(--accent-color);
+		color: white;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 16px;
+		font-weight: 600;
+		white-space: nowrap;
+	}
+
+	.vorlage-apply-btn:hover:not(:disabled) {
+		background: var(--accent-hover);
+	}
+
+	.vorlage-apply-btn:disabled {
+		background: #ccc;
+		cursor: not-allowed;
+	}
+
 	@media (max-width: 768px) {
 		.edit-container {
 			padding: 15px;
@@ -796,6 +907,14 @@
 		}
 
 		button {
+			width: 100%;
+		}
+
+		.vorlage-auswahl {
+			flex-direction: column;
+		}
+
+		.vorlage-apply-btn {
 			width: 100%;
 		}
 	}

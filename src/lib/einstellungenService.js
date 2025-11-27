@@ -104,3 +104,46 @@ export async function saveRaeume(raeume) {
 
 	return true;
 }
+
+/**
+ * Vorlagen laden
+ * @returns {Promise<Array<{id: string, name: string, inhalt: object}>>} Liste der Vorlagen
+ */
+export async function getVorlagen() {
+	const { data, error } = await supabase
+		.from('einstellungen')
+		.select('value')
+		.eq('key', 'vorlagen')
+		.single();
+
+	if (error) {
+		console.error('Fehler beim Laden der Vorlagen:', error);
+		return [];
+	}
+
+	return data?.value || [];
+}
+
+/**
+ * Vorlagen speichern
+ * @param {Array<{id: string, name: string, inhalt: object}>} vorlagen - Liste der Vorlagen
+ * @returns {Promise<boolean>} Erfolg
+ */
+export async function saveVorlagen(vorlagen) {
+	const { error } = await supabase
+		.from('einstellungen')
+		.upsert({
+			key: 'vorlagen',
+			value: vorlagen,
+			updated_at: new Date().toISOString()
+		}, {
+			onConflict: 'key'
+		});
+
+	if (error) {
+		console.error('Fehler beim Speichern der Vorlagen:', error);
+		return false;
+	}
+
+	return true;
+}
