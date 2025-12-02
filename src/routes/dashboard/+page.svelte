@@ -893,10 +893,10 @@
 	}
 
 	@media print {
-		/* Querformat mit minimalen Rändern */
+		/* A4 Querformat mit minimalen Rändern für maximale Nutzung */
 		@page {
-			size: landscape;
-			margin: 0.8cm;
+			size: A4 landscape;
+			margin: 0.5cm;
 		}
 
 		/* Verstecke Elemente, die nicht gedruckt werden sollen */
@@ -904,25 +904,25 @@
 			display: none !important;
 		}
 
-		/* Zeige Druck-Header - kompakter */
+		/* Zeige Druck-Header - extrem kompakt */
 		.print-header {
 			display: block;
 			text-align: center;
-			margin-bottom: 0.8rem;
-			padding-bottom: 0.5rem;
-			border-bottom: 2px solid #3498db;
+			margin-bottom: 0.4rem;
+			padding-bottom: 0.3rem;
+			border-bottom: 1px solid #3498db;
 		}
 
 		.print-header h1 {
-			margin: 0 0 0.3rem 0;
+			margin: 0 0 0.2rem 0;
 			color: #2c3e50;
-			font-size: 1.5rem;
+			font-size: 1.2rem;
 		}
 
 		.print-header h2 {
 			margin: 0;
 			color: #555;
-			font-size: 1rem;
+			font-size: 0.85rem;
 			font-weight: normal;
 		}
 
@@ -936,54 +936,65 @@
 		.protokoll-content {
 			max-width: none;
 			margin: 0;
+			display: flex;
+			flex-direction: column;
+			height: auto;
 		}
 
-		/* Sections - kompakter */
+		/* Sections - extrem kompakt */
 		.section {
 			background: white;
 			box-shadow: none;
-			padding: 0.8rem;
-			margin-bottom: 0.8rem;
+			padding: 0.5rem;
+			margin-bottom: 0.5rem;
 			border: 1px solid #ccc;
-			border-radius: 4px;
+			border-radius: 2px;
 			page-break-inside: avoid;
+		}
+
+		/* Erste Section (Allgemeine Infos) noch kompakter */
+		.section:first-of-type {
+			margin-bottom: 0.4rem;
 		}
 
 		h3 {
 			color: #2c3e50;
-			font-size: 0.95rem;
-			margin: 0 0 0.5rem 0;
-			border-bottom: 2px solid #3498db;
-			padding-bottom: 0.3rem;
+			font-size: 0.8rem;
+			margin: 0 0 0.4rem 0;
+			border-bottom: 1px solid #3498db;
+			padding-bottom: 0.2rem;
 		}
 
-		/* Info Grid - noch kompakter */
+		/* Info Grid - ultra kompakt mit 4 Spalten */
 		.info-grid {
 			display: grid;
-			grid-template-columns: repeat(3, 1fr);
-			gap: 0.5rem;
+			grid-template-columns: repeat(4, 1fr);
+			gap: 0.3rem 0.5rem;
 		}
 
 		.info-item {
 			break-inside: avoid;
+			display: flex;
+			flex-direction: column;
+			gap: 0.1rem;
 		}
 
 		.info-item strong {
 			color: #555;
-			font-size: 0.7rem;
+			font-size: 0.6rem;
 		}
 
 		.info-item span {
 			color: #000;
-			font-size: 0.75rem;
-			line-height: 1.2;
+			font-size: 0.65rem;
+			line-height: 1.1;
 		}
 
 		.info-item.full-width {
 			grid-column: 1 / -1;
 		}
 
-		/* Tabelle - kompakt für eine Seite */
+		/* Tabelle - ultra kompakt für eine Seite */
 		.table-container {
 			overflow: visible;
 		}
@@ -991,22 +1002,23 @@
 		.planung-table {
 			width: 100%;
 			border-collapse: collapse;
-			font-size: 0.65rem;
+			font-size: 0.55rem;
 		}
 
 		.planung-table th,
 		.planung-table td {
 			border: 1px solid #333;
-			padding: 0.3rem 0.4rem;
+			padding: 0.2rem 0.3rem;
 			text-align: left;
-			line-height: 1.2;
+			line-height: 1.1;
+			vertical-align: top;
 		}
 
 		.planung-table thead th {
 			background: #3498db !important;
 			color: white !important;
 			font-weight: 600;
-			font-size: 0.7rem;
+			font-size: 0.6rem;
 			-webkit-print-color-adjust: exact;
 			print-color-adjust: exact;
 		}
@@ -1015,7 +1027,7 @@
 			background: #f0f0f0 !important;
 			font-weight: 600;
 			color: #000 !important;
-			font-size: 0.7rem;
+			font-size: 0.6rem;
 			-webkit-print-color-adjust: exact;
 			print-color-adjust: exact;
 		}
@@ -1024,18 +1036,33 @@
 			color: #000;
 		}
 
-		/* Alles auf einer Seite halten */
-		.dashboard,
+		/* KRITISCH: Verhindere Seitenumbrüche */
+		.dashboard {
+			page-break-inside: avoid !important;
+			page-break-after: avoid !important;
+			page-break-before: avoid !important;
+		}
+
 		.protokoll-content {
-			page-break-inside: avoid;
+			page-break-inside: avoid !important;
+			page-break-after: avoid !important;
+			page-break-before: avoid !important;
 		}
 
 		.section {
-			page-break-inside: avoid;
+			page-break-inside: avoid !important;
+			page-break-after: avoid !important;
 		}
 
 		.planung-table {
-			page-break-inside: avoid;
+			page-break-inside: avoid !important;
+			page-break-after: avoid !important;
+			page-break-before: avoid !important;
+		}
+
+		/* Fallback für WebKit */
+		* {
+			-webkit-column-break-inside: avoid;
 		}
 
 		.planung-table tr {
