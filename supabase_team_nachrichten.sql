@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS public.team_nachrichten (
 -- Tabelle für Nachrichten-Log (Historie)
 CREATE TABLE IF NOT EXISTS public.team_nachrichten_log (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nachricht_id UUID REFERENCES public.team_nachrichten(id) ON DELETE CASCADE,
+    nachricht_id UUID REFERENCES public.team_nachrichten(id) ON DELETE SET NULL,
     action TEXT NOT NULL, -- 'created', 'edited', 'deleted'
     performed_by TEXT NOT NULL,
     performed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
