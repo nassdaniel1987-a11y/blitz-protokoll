@@ -1,7 +1,7 @@
 <script>
 	import { supabase } from '$lib/supabaseClient';
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { getProtokoll, getToday, deleteProtokoll } from '$lib/protokollService';
 	import { getRaeume } from '$lib/einstellungenService';
 	import { getNachrichten } from '$lib/teamNachrichtenService';
@@ -18,6 +18,7 @@
 	let currentUsername = '';
 	let showNachrichtenModal = false;
 	let messageCount = 0;
+	let realtimeChannel = null; // Realtime für Badge-Counter
 
 	// Raumliste - wird dynamisch geladen
 	let raeume = [];
@@ -42,7 +43,34 @@
 
 		await loadProtokoll();
 		await loadMessageCount();
+
+		// REALTIME: Badge-Counter auto-update
+		subscribeToMessages();
 	});
+
+	onDestroy(() => {
+		if (realtimeChannel) {
+			supabase.removeChannel(realtimeChannel);
+		}
+	});
+
+	// REALTIME: Subscribe zu Nachrichten für Badge-Counter
+	function subscribeToMessages() {
+		realtimeChannel = supabase
+			.channel('dashboard-messages-badge')
+			.on(
+				'postgres_changes',
+				{
+					event: '*',
+					schema: 'public',
+					table: 'team_nachrichten'
+				},
+				async () => {
+					await loadMessageCount(); // Badge aktualisieren
+				}
+			)
+			.subscribe();
+	}
 
 	async function loadMessageCount() {
 		const nachrichten = await getNachrichten();

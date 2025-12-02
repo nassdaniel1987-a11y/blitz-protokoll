@@ -1,5 +1,5 @@
 <script>
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { getNachrichten, createNachricht, updateNachricht, deleteNachricht, getAllLogs } from '$lib/teamNachrichtenService';
 	import { toast } from '$lib/toastStore';
 	import { supabase } from '$lib/supabaseClient';
@@ -14,10 +14,48 @@
 	let editingMessage = '';
 	let showLog = false;
 	let logEntries = [];
+	let realtimeChannel = null; // Realtime subscription
 
 	$: if (show) {
 		loadNachrichten();
+		subscribeToNachrichten(); // Realtime aktivieren
+	} else {
+		unsubscribeFromNachrichten(); // Cleanup wenn Modal geschlossen
 	}
+
+	// REALTIME: Subscribe zu Nachrichten-Änderungen
+	function subscribeToNachrichten() {
+		if (realtimeChannel) return; // Bereits subscribed
+
+		realtimeChannel = supabase
+			.channel('team-nachrichten-realtime')
+			.on(
+				'postgres_changes',
+				{
+					event: '*',
+					schema: 'public',
+					table: 'team_nachrichten'
+				},
+				(payload) => {
+					console.log('Team-Nachrichten Update:', payload);
+					loadNachrichten(); // Nachrichten neu laden
+				}
+			)
+			.subscribe();
+	}
+
+	// REALTIME: Unsubscribe
+	function unsubscribeFromNachrichten() {
+		if (realtimeChannel) {
+			supabase.removeChannel(realtimeChannel);
+			realtimeChannel = null;
+		}
+	}
+
+	// Cleanup on destroy
+	onDestroy(() => {
+		unsubscribeFromNachrichten();
+	});
 
 	async function loadNachrichten() {
 		nachrichten = await getNachrichten();
