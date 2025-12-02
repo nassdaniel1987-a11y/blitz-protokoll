@@ -83,6 +83,21 @@
 		loading = false;
 	}
 
+	// STATISTIKEN: Reaktive Berechnung der Dashboard-Statistiken
+	$: stats = protokoll ? {
+		anwesendeAnzahl: protokoll.inhalt.anwesenheit ?
+			protokoll.inhalt.anwesenheit.split(',').map(p => p.trim()).filter(p => p).length : 0,
+		warnungen: [
+			!protokoll.inhalt.leitung_im_haus?.trim() ? 'Leitung im Haus fehlt!' : null,
+			!protokoll.inhalt.spaetdienst?.trim() ? 'Spätdienst fehlt!' : null
+		].filter(w => w),
+		infos: [
+			!protokoll.inhalt.fruehdienst_naechster_tag?.trim() ? 'Frühdienst (nächster Tag) nicht eingetragen' : null,
+			!protokoll.inhalt.wer_geht_essen?.trim() ? 'Wer geht essen nicht eingetragen' : null
+		].filter(i => i),
+		fruehdienstNaechsterTag: protokoll.inhalt.fruehdienst_naechster_tag || null
+	} : null;
+
 	async function loadWoche() {
 		loading = true;
 		const date = new Date(currentDate);
@@ -246,6 +261,53 @@
 					🗑️ Protokoll löschen
 				</button>
 			</div>
+
+			<!-- SCHNELLSTATISTIK -->
+			{#if stats}
+				<section class="quick-stats no-print">
+					<div class="stat-card stat-primary">
+						<div class="stat-icon">👥</div>
+						<div class="stat-content">
+							<div class="stat-value">{stats.anwesendeAnzahl}</div>
+							<div class="stat-label">Personen anwesend</div>
+						</div>
+					</div>
+
+					{#if stats.fruehdienstNaechsterTag}
+						<div class="stat-card stat-info">
+							<div class="stat-icon">🌅</div>
+							<div class="stat-content">
+								<div class="stat-value">{stats.fruehdienstNaechsterTag}</div>
+								<div class="stat-label">Frühdienst morgen</div>
+							</div>
+						</div>
+					{/if}
+
+					{#if stats.warnungen.length > 0}
+						<div class="stat-card stat-warning">
+							<div class="stat-icon">⚠️</div>
+							<div class="stat-content">
+								<div class="stat-label">Wichtige Felder fehlen:</div>
+								{#each stats.warnungen as warnung}
+									<div class="stat-warning-item">{warnung}</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					{#if stats.infos.length > 0}
+						<div class="stat-card stat-info-light">
+							<div class="stat-icon">ℹ️</div>
+							<div class="stat-content">
+								<div class="stat-label">Hinweise:</div>
+								{#each stats.infos as info}
+									<div class="stat-info-item">{info}</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+				</section>
+			{/if}
 
 			<!-- Allgemeine Infos -->
 			<section class="section">
@@ -534,6 +596,92 @@
 		display: flex;
 		gap: 15px;
 		justify-content: flex-end;
+	}
+
+	/* SCHNELLSTATISTIK */
+	.quick-stats {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+		gap: 16px;
+		margin-bottom: 30px;
+	}
+
+	.stat-card {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		padding: 20px;
+		border-radius: 12px;
+		box-shadow: 0 2px 8px var(--shadow);
+		transition: transform 0.2s, box-shadow 0.2s;
+	}
+
+	.stat-card:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px var(--shadow);
+	}
+
+	.stat-card.stat-primary {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+	}
+
+	:global(.dark-mode) .stat-card.stat-primary {
+		background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+	}
+
+	.stat-card.stat-info {
+		background: linear-gradient(135deg, #6dd5fa 0%, #2980b9 100%);
+		color: white;
+	}
+
+	:global(.dark-mode) .stat-card.stat-info {
+		background: linear-gradient(135deg, #5ab9e8 0%, #2567a0 100%);
+	}
+
+	.stat-card.stat-warning {
+		background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+		color: white;
+	}
+
+	:global(.dark-mode) .stat-card.stat-warning {
+		background: linear-gradient(135deg, #d87de6 0%, #d4485a 100%);
+	}
+
+	.stat-card.stat-info-light {
+		background: var(--bg-secondary);
+		border: 2px solid #ffc107;
+		color: var(--text-primary);
+	}
+
+	.stat-icon {
+		font-size: 40px;
+		flex-shrink: 0;
+	}
+
+	.stat-content {
+		flex: 1;
+	}
+
+	.stat-value {
+		font-size: 32px;
+		font-weight: 700;
+		line-height: 1;
+		margin-bottom: 4px;
+	}
+
+	.stat-label {
+		font-size: 14px;
+		opacity: 0.9;
+		font-weight: 500;
+	}
+
+	.stat-warning-item,
+	.stat-info-item {
+		font-size: 13px;
+		margin-top: 6px;
+		padding-left: 8px;
+		border-left: 2px solid currentColor;
 	}
 
 	.edit-btn {
