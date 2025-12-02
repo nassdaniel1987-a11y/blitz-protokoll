@@ -39,7 +39,7 @@ BEGIN
     RETURN QUERY
     SELECT
         u.id,
-        u.email,
+        u.email::text,
         u.created_at,
         u.last_sign_in_at,
         COALESCE((u.raw_user_meta_data ->> 'is_admin')::boolean, false) as is_admin,
