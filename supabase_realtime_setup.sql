@@ -58,4 +58,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.protokolle;
 -- 7. Realtime für active_editors Tabelle aktivieren
 ALTER PUBLICATION supabase_realtime ADD TABLE public.active_editors;
 
+-- 8. Realtime für team_nachrichten Tabelle aktivieren
+ALTER PUBLICATION supabase_realtime ADD TABLE public.team_nachrichten;
+
 -- Fertig! Realtime ist jetzt aktiviert.

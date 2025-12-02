@@ -84,6 +84,7 @@
 	let heartbeatInterval;
 	let protokollSubscription;
 	let editorsSubscription;
+	let messagesSubscription; // Realtime für Badge-Counter
 
 	const zeitslots = ['12:25-13:10', '13:15-14:00', '14:00-14:30'];
 
@@ -175,6 +176,22 @@
 		editorsSubscription = subscribeToActiveEditors(currentDate, (editors) => {
 			activeEditors = editors.filter(e => e.username !== currentUsername);
 		});
+
+		// REALTIME: Subscribe zu Team-Nachrichten für Badge-Counter
+		messagesSubscription = supabase
+			.channel('edit-messages-badge')
+			.on(
+				'postgres_changes',
+				{
+					event: '*',
+					schema: 'public',
+					table: 'team_nachrichten'
+				},
+				async () => {
+					await loadMessageCount(); // Badge aktualisieren
+				}
+			)
+			.subscribe();
 	});
 
 	// REALTIME: Cleanup beim Verlassen der Seite
@@ -195,6 +212,9 @@
 		}
 		if (editorsSubscription) {
 			await supabase.removeChannel(editorsSubscription);
+		}
+		if (messagesSubscription) {
+			await supabase.removeChannel(messagesSubscription);
 		}
 	});
 
