@@ -46,7 +46,7 @@ export async function createUser(username, password) {
 			return { success: false, error: 'Nicht authentifiziert' };
 		}
 
-		const response = await fetch(`${supabaseUrl}/functions/v1/create-user`, {
+		const response = await fetch(`${supabaseUrl}/functions/v1/bright-api`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
