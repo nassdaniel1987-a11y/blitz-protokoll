@@ -1,7 +1,7 @@
 <script>
 	import { supabase } from '$lib/supabaseClient';
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/stores';
 	import { getProtokoll, saveProtokoll, getToday } from '$lib/protokollService';
 	// NEU: getPersonen und getRaeume importieren
@@ -12,6 +12,15 @@
 	import PersonenAuswahlModal from '$lib/components/PersonenAuswahlModal.svelte';
 	import PersonenKacheln from '$lib/components/PersonenKacheln.svelte';
 	import TeamNachrichtenModal from '$lib/components/TeamNachrichtenModal.svelte';
+	// REALTIME: Import für gleichzeitiges Bearbeiten
+	import {
+		registerEditor,
+		unregisterEditor,
+		updateHeartbeat,
+		getActiveEditors,
+		subscribeToProtokoll,
+		subscribeToActiveEditors
+	} from '$lib/realtimeService';
 
 	let currentDate = getToday();
 	let formData = {
@@ -69,6 +78,12 @@
 	let currentUsername = '';
 	let showNachrichtenModal = false;
 	let messageCount = 0;
+
+	// REALTIME: Variablen für gleichzeitiges Bearbeiten
+	let activeEditors = [];
+	let heartbeatInterval;
+	let protokollSubscription;
+	let editorsSubscription;
 
 	const zeitslots = ['12:25-13:10', '13:15-14:00', '14:00-14:30'];
 
@@ -129,6 +144,58 @@
 			formData = createEmptyProtokoll();
 		}
 		loading = false;
+
+		// REALTIME: Editor registrieren und Subscriptions starten
+		await registerEditor(currentDate, currentUsername);
+
+		// Lade aktive Editoren
+		activeEditors = await getActiveEditors(currentDate);
+
+		// Heartbeat alle 10 Sekunden senden
+		heartbeatInterval = setInterval(async () => {
+			await updateHeartbeat(currentDate, currentUsername);
+		}, 10000);
+
+		// Subscribe zu Protokoll-Änderungen
+		protokollSubscription = subscribeToProtokoll(currentDate, async (payload) => {
+			// Wenn jemand anderes speichert, zeige Warnung und frage ob neu laden
+			if (payload.eventType === 'UPDATE') {
+				toast.show('⚠️ Das Protokoll wurde von einem anderen Nutzer geändert!', 'warning', 5000);
+				// Optional: Automatisch neu laden nach 2 Sekunden
+				setTimeout(async () => {
+					const neuesProtokoll = await getProtokoll(currentDate);
+					if (neuesProtokoll && confirm('Das Protokoll wurde geändert. Möchten Sie die Seite neu laden? (Ungespeicherte Änderungen gehen verloren)')) {
+						window.location.reload();
+					}
+				}, 2000);
+			}
+		});
+
+		// Subscribe zu Änderungen der aktiven Editoren
+		editorsSubscription = subscribeToActiveEditors(currentDate, (editors) => {
+			activeEditors = editors.filter(e => e.username !== currentUsername);
+		});
+	});
+
+	// REALTIME: Cleanup beim Verlassen der Seite
+	onDestroy(async () => {
+		// Editor abmelden
+		if (currentDate && currentUsername) {
+			await unregisterEditor(currentDate, currentUsername);
+		}
+
+		// Heartbeat stoppen
+		if (heartbeatInterval) {
+			clearInterval(heartbeatInterval);
+		}
+
+		// Subscriptions beenden
+		if (protokollSubscription) {
+			await supabase.removeChannel(protokollSubscription);
+		}
+		if (editorsSubscription) {
+			await supabase.removeChannel(editorsSubscription);
+		}
 	});
 
 	function parsePersonenString(str) {
@@ -315,6 +382,21 @@
 				{/if}
 			</button>
 		</div>
+
+		<!-- REALTIME: Warnung wenn andere Editoren aktiv sind -->
+		{#if activeEditors.length > 0}
+			<div class="realtime-warning">
+				<span class="warning-icon">⚠️</span>
+				<span class="warning-text">
+					{#if activeEditors.length === 1}
+						<strong>{activeEditors[0].username}</strong> bearbeitet dieses Protokoll gerade auch.
+					{:else}
+						<strong>{activeEditors.map(e => e.username).join(', ')}</strong> bearbeiten dieses Protokoll gerade auch.
+					{/if}
+					Änderungen können überschrieben werden!
+				</span>
+			</div>
+		{/if}
 
 		{#if isNewProtokoll && vorlagen.length > 0}
 			<section class="section vorlage-section">
@@ -950,6 +1032,66 @@
 	.vorlage-apply-btn:disabled {
 		background: #ccc;
 		cursor: not-allowed;
+	}
+
+	/* REALTIME: Warnung für gleichzeitiges Bearbeiten */
+	.realtime-warning {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 16px;
+		background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+		border: 2px solid #ffc107;
+		border-radius: 12px;
+		margin-bottom: 20px;
+		animation: pulse-warning 2s ease-in-out infinite;
+	}
+
+	:global(.dark-mode) .realtime-warning {
+		background: linear-gradient(135deg, #5a4a1f 0%, #7a6a2f 100%);
+		border-color: #ffc107;
+	}
+
+	@keyframes pulse-warning {
+		0%, 100% {
+			opacity: 1;
+			transform: scale(1);
+		}
+		50% {
+			opacity: 0.95;
+			transform: scale(1.005);
+		}
+	}
+
+	.warning-icon {
+		font-size: 24px;
+		flex-shrink: 0;
+		animation: shake 0.5s ease-in-out infinite;
+	}
+
+	@keyframes shake {
+		0%, 100% { transform: rotate(0deg); }
+		25% { transform: rotate(-5deg); }
+		75% { transform: rotate(5deg); }
+	}
+
+	.warning-text {
+		color: #856404;
+		font-size: 0.95rem;
+		line-height: 1.4;
+	}
+
+	:global(.dark-mode) .warning-text {
+		color: #ffd966;
+	}
+
+	.warning-text strong {
+		color: #664d03;
+		font-weight: 600;
+	}
+
+	:global(.dark-mode) .warning-text strong {
+		color: #ffc107;
 	}
 
 	@media (max-width: 768px) {

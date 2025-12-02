@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { getPersonen, savePersonen, getRaeume, saveRaeume, getVorlagen, saveVorlagen } from '$lib/einstellungenService';
+	import { isCurrentUserAdmin, getAllUsers, createUser, removeMustChangePassword, setUserAdminStatus } from '$lib/userManagementService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
 
@@ -15,6 +16,14 @@
 	let loading = true;
 	let saving = false;
 
+	// User-Management (nur für Admins)
+	let isAdmin = false;
+	let users = [];
+	let showCreateUserModal = false;
+	let newUsername = '';
+	let newUserPassword = '';
+	let creatingUser = false;
+
 	onMount(async () => {
 		// Auth-Check
 		const { data } = await supabase.auth.getSession();
@@ -23,10 +32,19 @@
 			return;
 		}
 
+		// Prüfen ob User Admin ist
+		isAdmin = await isCurrentUserAdmin();
+
 		// Personen, Räume und Vorlagen laden
 		personen = await getPersonen();
 		raeume = await getRaeume();
 		vorlagen = await getVorlagen();
+
+		// Wenn Admin: User-Liste laden
+		if (isAdmin) {
+			users = await getAllUsers();
+		}
+
 		loading = false;
 	});
 
@@ -102,6 +120,83 @@
 		}
 		saving = false;
 	}
+
+	// USER-MANAGEMENT Funktionen (nur für Admins)
+
+	async function handleCreateUser() {
+		if (!newUsername.trim() || !newUserPassword.trim()) {
+			toast.show('Bitte Username und Passwort eingeben!', 'error');
+			return;
+		}
+
+		if (newUserPassword.length < 8) {
+			toast.show('Passwort muss mindestens 8 Zeichen lang sein!', 'error');
+			return;
+		}
+
+		creatingUser = true;
+		const result = await createUser(newUsername.trim(), newUserPassword);
+
+		if (result.success) {
+			toast.show(`User "${newUsername}" erfolgreich erstellt!`, 'success');
+			// User-Liste neu laden
+			users = await getAllUsers();
+			// Modal schließen und Felder leeren
+			showCreateUserModal = false;
+			newUsername = '';
+			newUserPassword = '';
+		} else {
+			toast.show(`Fehler beim Erstellen: ${result.error}`, 'error');
+		}
+
+		creatingUser = false;
+	}
+
+	async function handleRemoveMustChangePassword(user) {
+		const currentMetadata = {
+			is_admin: user.is_admin,
+			must_change_password: user.must_change_password
+		};
+
+		const success = await removeMustChangePassword(user.id, currentMetadata);
+
+		if (success) {
+			toast.show('Passwort-Änderungspflicht entfernt!', 'success');
+			users = await getAllUsers();
+		} else {
+			toast.show('Fehler beim Aktualisieren!', 'error');
+		}
+	}
+
+	async function handleToggleAdmin(user) {
+		const currentMetadata = {
+			is_admin: user.is_admin,
+			must_change_password: user.must_change_password
+		};
+
+		const newAdminStatus = !user.is_admin;
+		const success = await setUserAdminStatus(user.id, currentMetadata, newAdminStatus);
+
+		if (success) {
+			toast.show(
+				newAdminStatus ? 'Admin-Rechte erteilt!' : 'Admin-Rechte entfernt!',
+				'success'
+			);
+			users = await getAllUsers();
+		} else {
+			toast.show('Fehler beim Aktualisieren!', 'error');
+		}
+	}
+
+	function formatTimestamp(timestamp) {
+		if (!timestamp) return 'Nie';
+		const date = new Date(timestamp);
+		return date.toLocaleString('de-DE');
+	}
+
+	function getUsernameFromEmail(email) {
+		return email.split('@')[0];
+	}
 </script>
 
 <div class="settings-container">
@@ -115,6 +210,65 @@
 	{#if loading}
 		<p class="loading-text">Lade Einstellungen...</p>
 	{:else}
+		<!-- USER-VERWALTUNG (nur für Admins) -->
+		{#if isAdmin}
+			<section class="section admin-section">
+				<h2>🔐 Benutzerverwaltung</h2>
+				<p class="description">
+					Erstelle und verwalte Benutzer-Accounts. Neue User müssen beim ersten Login ihr Passwort ändern.
+				</p>
+
+				<button on:click={() => showCreateUserModal = true} class="create-user-btn">
+					+ Neuer Benutzer
+				</button>
+
+				<div class="user-list">
+					{#each users as user}
+						<div class="user-item">
+							<div class="user-info">
+								<div class="user-header">
+									<span class="user-name">{getUsernameFromEmail(user.email)}</span>
+									{#if user.is_admin}
+										<span class="admin-badge">Admin</span>
+									{/if}
+									{#if user.must_change_password}
+										<span class="password-badge">Passwort ändern</span>
+									{/if}
+								</div>
+								<div class="user-details">
+									<span class="user-email">{user.email}</span>
+									<span class="user-date">Erstellt: {formatTimestamp(user.created_at)}</span>
+									{#if user.last_sign_in_at}
+										<span class="user-date">Letzter Login: {formatTimestamp(user.last_sign_in_at)}</span>
+									{:else}
+										<span class="user-date user-never-logged-in">Noch nie eingeloggt</span>
+									{/if}
+								</div>
+							</div>
+							<div class="user-actions">
+								{#if user.must_change_password}
+									<button
+										on:click={() => handleRemoveMustChangePassword(user)}
+										class="action-btn"
+										title="Passwort-Änderungspflicht entfernen"
+									>
+										🔓 Pflicht entfernen
+									</button>
+								{/if}
+								<button
+									on:click={() => handleToggleAdmin(user)}
+									class="action-btn"
+									title={user.is_admin ? 'Admin-Rechte entziehen' : 'Zum Admin machen'}
+								>
+									{user.is_admin ? '👤 Admin entfernen' : '👑 Zum Admin machen'}
+								</button>
+							</div>
+						</div>
+					{/each}
+				</div>
+			</section>
+		{/if}
+
 		<section class="section">
 			<h2>Personenliste</h2>
 			<p class="description">
@@ -241,6 +395,75 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Modal: Neuer Benutzer erstellen -->
+{#if showCreateUserModal}
+	<div class="modal-overlay" on:click={() => showCreateUserModal = false}>
+		<div class="modal-content" on:click|stopPropagation>
+			<div class="modal-header">
+				<h2>Neuer Benutzer</h2>
+				<button
+					on:click={() => showCreateUserModal = false}
+					class="modal-close"
+					title="Schließen"
+				>
+					✕
+				</button>
+			</div>
+
+			<div class="modal-body">
+				<div class="form-group">
+					<label for="username">
+						Username
+						<span class="hint">(ohne @blitz-protokoll.local)</span>
+					</label>
+					<input
+						type="text"
+						id="username"
+						bind:value={newUsername}
+						placeholder="z.B. mueller"
+						disabled={creatingUser}
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="password">
+						Initial-Passwort
+						<span class="hint">(mind. 8 Zeichen)</span>
+					</label>
+					<input
+						type="password"
+						id="password"
+						bind:value={newUserPassword}
+						placeholder="Temporäres Passwort"
+						disabled={creatingUser}
+					/>
+				</div>
+
+				<p class="modal-info">
+					ℹ️ Der neue User muss beim ersten Login das Passwort ändern.
+				</p>
+			</div>
+
+			<div class="modal-footer">
+				<button
+					on:click={() => showCreateUserModal = false}
+					class="btn-secondary"
+					disabled={creatingUser}
+				>
+					Abbrechen
+				</button>
+				<button
+					on:click={handleCreateUser}
+					class="btn-primary"
+					disabled={creatingUser}
+				>
+					{creatingUser ? 'Erstelle...' : 'Benutzer erstellen'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.settings-container {
@@ -481,6 +704,295 @@
 	}
 
 	/* iPad-Optimierung */
+	/* USER-MANAGEMENT Styles */
+
+	.admin-section {
+		background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+		border-left: 4px solid #2196f3;
+	}
+
+	:global(.dark-mode) .admin-section {
+		background: linear-gradient(135deg, #1a2a3a 0%, #2a3a4a 100%);
+		border-left-color: #64b5f6;
+	}
+
+	.create-user-btn {
+		padding: 12px 24px;
+		background: #2196f3;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 16px;
+		font-weight: 600;
+		margin-bottom: 20px;
+	}
+
+	.create-user-btn:hover {
+		background: #1976d2;
+	}
+
+	.user-list {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.user-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 16px;
+		padding: 16px;
+		background: white;
+		border: 2px solid #e0e0e0;
+		border-radius: 8px;
+	}
+
+	:global(.dark-mode) .user-item {
+		background: #2d2d2d;
+		border-color: #444;
+	}
+
+	.user-info {
+		flex: 1;
+	}
+
+	.user-header {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 8px;
+	}
+
+	.user-name {
+		font-weight: 600;
+		font-size: 18px;
+		color: var(--text-primary);
+	}
+
+	.admin-badge {
+		padding: 4px 8px;
+		background: #ff9800;
+		color: white;
+		border-radius: 4px;
+		font-size: 12px;
+		font-weight: 600;
+	}
+
+	.password-badge {
+		padding: 4px 8px;
+		background: #f44336;
+		color: white;
+		border-radius: 4px;
+		font-size: 12px;
+		font-weight: 600;
+	}
+
+	.user-details {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.user-email {
+		color: var(--text-secondary);
+		font-size: 14px;
+	}
+
+	.user-date {
+		color: var(--text-secondary);
+		font-size: 13px;
+	}
+
+	.user-never-logged-in {
+		color: #f44336;
+		font-weight: 500;
+	}
+
+	.user-actions {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.action-btn {
+		padding: 8px 16px;
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+		border: 1px solid var(--border-color);
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 14px;
+		white-space: nowrap;
+	}
+
+	.action-btn:hover {
+		background: var(--accent-color);
+		color: white;
+		border-color: var(--accent-color);
+	}
+
+	/* Modal Styles */
+
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.6);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+		backdrop-filter: blur(2px);
+	}
+
+	.modal-content {
+		background: var(--bg-primary);
+		border-radius: 12px;
+		width: 90%;
+		max-width: 500px;
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+	}
+
+	.modal-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 20px;
+		border-bottom: 1px solid var(--border-color);
+	}
+
+	.modal-header h2 {
+		margin: 0;
+		color: var(--text-primary);
+	}
+
+	.modal-close {
+		background: none;
+		border: none;
+		font-size: 24px;
+		cursor: pointer;
+		color: var(--text-secondary);
+		padding: 0;
+		width: 32px;
+		height: 32px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 4px;
+	}
+
+	.modal-close:hover {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+	}
+
+	.modal-body {
+		padding: 20px;
+	}
+
+	.form-group {
+		margin-bottom: 20px;
+	}
+
+	.form-group label {
+		display: block;
+		margin-bottom: 8px;
+		color: var(--text-primary);
+		font-weight: 500;
+	}
+
+	.form-group .hint {
+		color: var(--text-secondary);
+		font-size: 13px;
+		font-weight: normal;
+	}
+
+	.form-group input {
+		width: 100%;
+		padding: 12px;
+		border: 2px solid var(--border-color);
+		border-radius: 8px;
+		font-size: 16px;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+	}
+
+	.form-group input:focus {
+		outline: none;
+		border-color: var(--accent-color);
+	}
+
+	.form-group input:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.modal-info {
+		padding: 12px;
+		background: #e3f2fd;
+		border-left: 4px solid #2196f3;
+		border-radius: 4px;
+		margin: 0;
+		font-size: 14px;
+		color: #1565c0;
+	}
+
+	:global(.dark-mode) .modal-info {
+		background: #1a2a3a;
+		color: #64b5f6;
+	}
+
+	.modal-footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: 12px;
+		padding: 20px;
+		border-top: 1px solid var(--border-color);
+	}
+
+	.btn-secondary {
+		padding: 12px 24px;
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+		border: 1px solid var(--border-color);
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 16px;
+	}
+
+	.btn-secondary:hover {
+		background: var(--border-color);
+	}
+
+	.btn-secondary:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.btn-primary {
+		padding: 12px 24px;
+		background: #2196f3;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 16px;
+		font-weight: 600;
+	}
+
+	.btn-primary:hover {
+		background: #1976d2;
+	}
+
+	.btn-primary:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
 	@media (max-width: 768px) {
 		.header {
 			flex-direction: column;
