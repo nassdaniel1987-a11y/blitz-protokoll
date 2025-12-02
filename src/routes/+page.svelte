@@ -2,8 +2,8 @@
 	import { supabase } from '$lib/supabaseClient';
 	import { goto } from '$app/navigation';
 	import { darkMode } from '$lib/darkModeStore';
-	
-	let email = '';
+
+	let username = '';
 	let password = '';
 	let errorMessage = '';
 	let loading = false;
@@ -12,13 +12,16 @@
 		loading = true;
 		errorMessage = '';
 
+		// Konvertiere Benutzername zu interner E-Mail
+		const email = `${username.trim()}@blitz-protokoll.local`;
+
 		const { data, error } = await supabase.auth.signInWithPassword({
 			email: email,
 			password: password
 		});
 
 		if (error) {
-			errorMessage = 'Anmeldung fehlgeschlagen: ' + error.message;
+			errorMessage = 'Anmeldung fehlgeschlagen: Benutzername oder Passwort falsch';
 			loading = false;
 		} else {
 			// Erfolgreich eingeloggt - weiter zum Dashboard
@@ -40,24 +43,26 @@
 
 		<form on:submit|preventDefault={handleLogin}>
 			<div class="form-group">
-				<label for="email">E-Mail</label>
-				<input 
-					type="email" 
-					id="email" 
-					bind:value={email} 
-					required 
-					placeholder="kollegium@schule.de"
+				<label for="username">Benutzername</label>
+				<input
+					type="text"
+					id="username"
+					bind:value={username}
+					required
+					placeholder="mueller"
+					autocomplete="username"
 				/>
 			</div>
 
 			<div class="form-group">
 				<label for="password">Passwort</label>
-				<input 
-					type="password" 
-					id="password" 
-					bind:value={password} 
-					required 
+				<input
+					type="password"
+					id="password"
+					bind:value={password}
+					required
 					placeholder="••••••••"
+					autocomplete="current-password"
 				/>
 			</div>
 
