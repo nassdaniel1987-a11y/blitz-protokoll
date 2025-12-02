@@ -24,8 +24,14 @@
 			errorMessage = 'Anmeldung fehlgeschlagen: Benutzername oder Passwort falsch';
 			loading = false;
 		} else {
-			// Erfolgreich eingeloggt - weiter zum Dashboard
-			goto('/dashboard');
+			// Prüfe ob Passwort geändert werden muss
+			const user = data.user;
+			if (user?.user_metadata?.must_change_password === true) {
+				goto('/change-password');
+			} else {
+				// Erfolgreich eingeloggt - weiter zum Dashboard
+				goto('/dashboard');
+			}
 		}
 	}
 </script>
