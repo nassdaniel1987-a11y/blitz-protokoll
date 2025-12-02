@@ -6,10 +6,12 @@
 	import { getProtokoll, saveProtokoll, getToday } from '$lib/protokollService';
 	// NEU: getPersonen und getRaeume importieren
 	import { getPersonen, getRaeume, getVorlagen } from '$lib/einstellungenService';
+	import { getNachrichten } from '$lib/teamNachrichtenService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
 	import PersonenAuswahlModal from '$lib/components/PersonenAuswahlModal.svelte';
 	import PersonenKacheln from '$lib/components/PersonenKacheln.svelte';
+	import TeamNachrichtenModal from '$lib/components/TeamNachrichtenModal.svelte';
 
 	let currentDate = getToday();
 	let formData = {
@@ -63,6 +65,11 @@
 	let selectedVorlageId = '';
 	let isNewProtokoll = true;
 
+	// Team-Nachrichten
+	let currentUsername = '';
+	let showNachrichtenModal = false;
+	let messageCount = 0;
+
 	const zeitslots = ['12:25-13:10', '13:15-14:00', '14:00-14:30'];
 
 	onMount(async () => {
@@ -72,10 +79,15 @@
 			return;
 		}
 
+		// Username extrahieren
+		const email = data.session.user.email;
+		currentUsername = email.split('@')[0];
+
 		// NEU: Lade die komplette Personenliste und Raumliste
 		allePersonen = await getPersonen();
 		raumDaten = await getRaeume();
 		vorlagen = await getVorlagen();
+		await loadMessageCount();
 
 		// Erstelle Arrays und Objekte für Räume
 		raeume = raumDaten.map(r => r.id);
@@ -258,7 +270,27 @@
 
 		toast.show(`Vorlage "${vorlage.name}" wurde angewendet!`, 'success');
 	}
+
+	async function loadMessageCount() {
+		const nachrichten = await getNachrichten();
+		messageCount = nachrichten.length;
+	}
+
+	async function openNachrichtenModal() {
+		showNachrichtenModal = true;
+		await loadMessageCount();
+	}
+
+	function closeNachrichtenModal() {
+		showNachrichtenModal = false;
+		loadMessageCount();
+	}
 </script>
+
+<TeamNachrichtenModal
+	bind:show={showNachrichtenModal}
+	{currentUsername}
+/>
 
 <PersonenAuswahlModal 
 	bind:show={showAnwesenheitModal}
@@ -272,8 +304,16 @@
 		<p class="loading-text">Lade Daten...</p>
 	{:else}
 		<div class="edit-header">
-			<h1>Protokoll bearbeiten</h1>
-			<p class="date">Datum: {currentDate}</p>
+			<div class="header-left">
+				<h1>Protokoll bearbeiten</h1>
+				<p class="date">Datum: {currentDate}</p>
+			</div>
+			<button on:click={openNachrichtenModal} class="nachrichten-btn" title="Team-Notizen">
+				📝
+				{#if messageCount > 0}
+					<span class="badge">{messageCount}</span>
+				{/if}
+			</button>
 		</div>
 
 		{#if isNewProtokoll && vorlagen.length > 0}
@@ -543,6 +583,14 @@
 
 	.edit-header {
 		margin-bottom: 30px;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 20px;
+	}
+
+	.header-left {
+		flex: 1;
 	}
 
 	h1 {
@@ -553,6 +601,37 @@
 	.date {
 		color: var(--text-secondary);
 		font-size: 1.1rem;
+	}
+
+	.nachrichten-btn {
+		position: relative;
+		padding: 12px 16px;
+		background: var(--accent-color);
+		color: white;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 20px;
+		line-height: 1;
+		flex-shrink: 0;
+	}
+
+	.nachrichten-btn:hover {
+		background: var(--accent-hover);
+	}
+
+	.nachrichten-btn .badge {
+		position: absolute;
+		top: -6px;
+		right: -6px;
+		background: #dc3545;
+		color: white;
+		font-size: 11px;
+		font-weight: 600;
+		padding: 2px 6px;
+		border-radius: 10px;
+		min-width: 18px;
+		text-align: center;
 	}
 
 	h2 {

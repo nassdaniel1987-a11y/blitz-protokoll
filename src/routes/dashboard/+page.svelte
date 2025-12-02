@@ -4,15 +4,20 @@
 	import { onMount } from 'svelte';
 	import { getProtokoll, getToday, deleteProtokoll } from '$lib/protokollService';
 	import { getRaeume } from '$lib/einstellungenService';
+	import { getNachrichten } from '$lib/teamNachrichtenService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
 	import Wochenansicht from '$lib/components/Wochenansicht.svelte';
+	import TeamNachrichtenModal from '$lib/components/TeamNachrichtenModal.svelte';
 
 	let currentDate = getToday();
 	let protokoll = null;
 	let loading = true;
 	let viewMode = 'day'; // 'day' oder 'week'
 	let wochenDaten = [];
+	let currentUsername = '';
+	let showNachrichtenModal = false;
+	let messageCount = 0;
 
 	// Raumliste - wird dynamisch geladen
 	let raeume = [];
@@ -27,12 +32,22 @@
 			return;
 		}
 
+		// Username extrahieren (von email)
+		const email = data.session.user.email;
+		currentUsername = email.split('@')[0];
+
 		// Räume laden
 		const raumDaten = await getRaeume();
 		raeume = raumDaten.map(r => ({ key: r.id, label: r.label }));
 
 		await loadProtokoll();
+		await loadMessageCount();
 	});
+
+	async function loadMessageCount() {
+		const nachrichten = await getNachrichten();
+		messageCount = nachrichten.length;
+	}
 
 	async function loadProtokoll() {
 		loading = true;
@@ -110,12 +125,33 @@
 	function handlePrint() {
 		window.print();
 	}
+
+	async function openNachrichtenModal() {
+		showNachrichtenModal = true;
+		await loadMessageCount();
+	}
+
+	function closeNachrichtenModal() {
+		showNachrichtenModal = false;
+		loadMessageCount();
+	}
 </script>
+
+<TeamNachrichtenModal
+	bind:show={showNachrichtenModal}
+	{currentUsername}
+/>
 
 <div class="dashboard">
 	<header class="header no-print">
 		<h1>Blitz-Protokoll</h1>
 		<div class="header-actions">
+			<button on:click={openNachrichtenModal} class="nachrichten-btn" title="Team-Notizen">
+				📝
+				{#if messageCount > 0}
+					<span class="badge">{messageCount}</span>
+				{/if}
+			</button>
 			<button on:click={() => goto('/settings')} class="settings-btn" title="Einstellungen">
 				⚙️
 			</button>
@@ -296,6 +332,35 @@
 		margin: 0;
 		color: var(--text-primary);
 		font-size: 1.8rem;
+	}
+
+	.nachrichten-btn {
+		position: relative;
+		padding: 10px 14px;
+		background: var(--bg-primary);
+		border: 2px solid var(--border-color);
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 18px;
+		line-height: 1;
+	}
+
+	.nachrichten-btn:hover {
+		background: var(--border-color);
+	}
+
+	.nachrichten-btn .badge {
+		position: absolute;
+		top: -6px;
+		right: -6px;
+		background: #dc3545;
+		color: white;
+		font-size: 11px;
+		font-weight: 600;
+		padding: 2px 6px;
+		border-radius: 10px;
+		min-width: 18px;
+		text-align: center;
 	}
 
 	.settings-btn {
