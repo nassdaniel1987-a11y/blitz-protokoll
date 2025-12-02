@@ -140,9 +140,14 @@ export async function getLog(nachrichtId) {
 
 /**
  * Komplettes Log aller Nachrichten laden (für Admin-Ansicht)
+ * Auto-Cleanup: Löscht Einträge älter als 3 Tage
  * @returns {Promise<Array>}
  */
 export async function getAllLogs() {
+	// Erst alte Logs löschen (älter als 3 Tage)
+	await supabase.rpc('cleanup_old_team_nachrichten_logs');
+
+	// Dann aktuelle Logs laden
 	const { data, error } = await supabase
 		.from('team_nachrichten_log')
 		.select('*')
