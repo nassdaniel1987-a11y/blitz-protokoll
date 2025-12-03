@@ -1204,7 +1204,7 @@
 	}
 
 	:global(.dark-mode) .paint-mode-section {
-		background: linear-gradient(135deg, #2d3748 0%, #3a4a5e 100%);
+		background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
 		border-left-color: #667eea;
 	}
 
@@ -1215,10 +1215,18 @@
 		line-height: 1.5;
 	}
 
+	:global(.dark-mode) .paint-mode-hint {
+		color: #a0aec0;
+	}
+
 	.selected-person-name {
 		color: #667eea;
 		font-weight: 600;
 		margin-left: 10px;
+	}
+
+	:global(.dark-mode) .selected-person-name {
+		color: #9f7aea;
 	}
 
 	.paint-mode-personen {
