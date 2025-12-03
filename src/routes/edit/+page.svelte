@@ -693,16 +693,23 @@
 												class="matrix-cell"
 												class:paint-mode-active={selectedPerson}
 												on:click={() => togglePersonInFeld(slot, raum)}
-												title={selectedPerson ? `Klicken um ${selectedPerson} hinzuzufügen/zu entfernen` : 'Wähle zuerst eine Person oben aus'}
+												title={selectedPerson ? `Klicken um ${selectedPerson} hinzuzufügen/zu entfernen` : ''}
 											>
-												<textarea
-													bind:value={formData.planung[slot][raum]}
-													placeholder="..."
-													class="matrix-input"
-													rows="1"
-													on:input={autoResize}
-													on:click|stopPropagation
-												></textarea>
+												{#if selectedPerson}
+													<!-- Paint Mode: Zeige nur Text, ganze Zelle ist klickbar -->
+													<div class="matrix-text-display">
+														{formData.planung[slot][raum] || '...'}
+													</div>
+												{:else}
+													<!-- Normal Mode: Zeige Textarea zum Editieren -->
+													<textarea
+														bind:value={formData.planung[slot][raum]}
+														placeholder="..."
+														class="matrix-input"
+														rows="1"
+														on:input={autoResize}
+													></textarea>
+												{/if}
 											</td>
 										{/each}
 									</tr>
@@ -934,6 +941,18 @@
 	.matrix-input:focus {
 		border-color: var(--accent-color);
 		outline: none;
+	}
+
+	.matrix-text-display {
+		width: 100%;
+		padding: 8px;
+		font-size: 14px;
+		min-height: 36px;
+		line-height: 1.4;
+		color: var(--text-primary);
+		white-space: pre-wrap;
+		word-break: break-word;
+		text-align: center;
 	}
 
 	.button-group {
