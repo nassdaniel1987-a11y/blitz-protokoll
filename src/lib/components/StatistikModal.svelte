@@ -10,15 +10,24 @@
 	let loading = false;
 	let statistiken = null;
 	let error = null;
+	let currentUser = null;
+	let assignedPersonName = null; // Der zugeordnete Name des aktuellen Users
 
 	// Standard: Letzter Monat
-	onMount(() => {
+	onMount(async () => {
 		const heute = new Date();
 		const vorMonat = new Date();
 		vorMonat.setMonth(vorMonat.getMonth() - 1);
 
 		endDate = heute.toISOString().split('T')[0];
 		startDate = vorMonat.toISOString().split('T')[0];
+
+		// Lade aktuellen User und zugeordneten Namen
+		const { data } = await supabase.auth.getSession();
+		if (data.session) {
+			currentUser = data.session.user;
+			assignedPersonName = currentUser.user_metadata?.assigned_person_name || null;
+		}
 	});
 
 	function close() {
@@ -50,6 +59,7 @@
 			const raumStats = {};
 			let gesamtTage = 0;
 			let gesamtAnwesenheit = 0;
+			let persoenlicheStats = null;
 
 			protokolle.forEach(protokoll => {
 				gesamtTage++;
@@ -89,6 +99,14 @@
 				});
 			});
 
+			// Persönliche Statistiken wenn Name zugeordnet
+			if (assignedPersonName && personenStats[assignedPersonName]) {
+				persoenlicheStats = {
+					name: assignedPersonName,
+					...personenStats[assignedPersonName]
+				};
+			}
+
 			// Sortiere Personen nach Anzahl Einteilungen
 			const personenArray = Object.entries(personenStats)
 				.map(([name, stats]) => ({ name, ...stats }))
@@ -101,6 +119,7 @@
 			statistiken = {
 				personenStats: personenArray,
 				raumStats: raumArray,
+				persoenlicheStats,
 				gesamtTage,
 				durchschnittAnwesenheit: gesamtTage > 0 ? (gesamtAnwesenheit / gesamtTage).toFixed(1) : 0,
 				zeitraum: { start: startDate, end: endDate }
@@ -150,6 +169,51 @@
 
 				{#if statistiken}
 					<div class="stats-container">
+						<!-- Persönliche Statistik (wenn Name zugeordnet) -->
+						{#if statistiken.persoenlicheStats}
+							<section class="stats-section personal-stats">
+								<h3>👤 Meine Statistiken</h3>
+								<div class="stats-grid">
+									<div class="stat-card highlight">
+										<div class="stat-label">Meine Einteilungen</div>
+										<div class="stat-value">{statistiken.persoenlicheStats.gesamt}</div>
+									</div>
+									<div class="stat-card">
+										<div class="stat-label">Häufigster Raum</div>
+										<div class="stat-value-small">
+											{Object.entries(statistiken.persoenlicheStats.raeume).sort((a, b) => b[1] - a[1])[0]?.[0] || '-'}
+										</div>
+									</div>
+									<div class="stat-card">
+										<div class="stat-label">Häufigster Zeitslot</div>
+										<div class="stat-value-small">
+											{Object.entries(statistiken.persoenlicheStats.zeitslots).sort((a, b) => b[1] - a[1])[0]?.[0] || '-'}
+										</div>
+									</div>
+								</div>
+
+								<!-- Meine Raumverteilung -->
+								<div class="chart-section">
+									<h4>Meine Raumverteilung</h4>
+									<div class="bar-chart">
+										{#each Object.entries(statistiken.persoenlicheStats.raeume).sort((a, b) => b[1] - a[1]) as [raum, anzahl]}
+											<div class="bar-row">
+												<div class="bar-label">{raum}</div>
+												<div class="bar-container">
+													<div
+														class="bar bar-personal"
+														style="width: {(anzahl / statistiken.persoenlicheStats.gesamt * 100)}%"
+													>
+														<span class="bar-value">{anzahl}</span>
+													</div>
+												</div>
+											</div>
+										{/each}
+									</div>
+								</div>
+							</section>
+						{/if}
+
 						<!-- Übersicht -->
 						<section class="stats-section">
 							<h3>📅 Übersicht</h3>
@@ -168,58 +232,53 @@
 						<!-- Personen-Statistiken -->
 						<section class="stats-section">
 							<h3>👥 Einteilungen pro Person</h3>
-							<div class="table-wrapper">
-								<table class="stats-table">
-									<thead>
-										<tr>
-											<th>Person</th>
-											<th>Einteilungen</th>
-											<th>Top Raum</th>
-											<th>Top Zeitslot</th>
-										</tr>
-									</thead>
-									<tbody>
-										{#each statistiken.personenStats as person}
-											<tr>
-												<td class="person-name">{person.name}</td>
-												<td class="centered">{person.gesamt}</td>
-												<td class="centered">
-													{Object.entries(person.raeume).sort((a, b) => b[1] - a[1])[0]?.[0] || '-'}
-												</td>
-												<td class="centered">
-													{Object.entries(person.zeitslots).sort((a, b) => b[1] - a[1])[0]?.[0] || '-'}
-												</td>
-											</tr>
-										{/each}
-									</tbody>
-								</table>
+							<div class="chart-section">
+								<div class="bar-chart">
+									{#each statistiken.personenStats.slice(0, 10) as person}
+										<div class="bar-row">
+											<div class="bar-label">{person.name}</div>
+											<div class="bar-container">
+												<div
+													class="bar bar-primary"
+													style="width: {(person.gesamt / statistiken.personenStats[0].gesamt * 100)}%"
+												>
+													<span class="bar-value">{person.gesamt}</span>
+												</div>
+											</div>
+											<div class="bar-details">
+												{Object.entries(person.raeume).sort((a, b) => b[1] - a[1])[0]?.[0] || '-'}
+											</div>
+										</div>
+									{/each}
+								</div>
+								{#if statistiken.personenStats.length > 10}
+									<p class="chart-note">Top 10 von {statistiken.personenStats.length} Personen</p>
+								{/if}
 							</div>
 						</section>
 
 						<!-- Raum-Statistiken -->
 						<section class="stats-section">
 							<h3>🏠 Belegung pro Raum</h3>
-							<div class="table-wrapper">
-								<table class="stats-table">
-									<thead>
-										<tr>
-											<th>Raum</th>
-											<th>Belegungen</th>
-											<th>Häufigste Person</th>
-										</tr>
-									</thead>
-									<tbody>
-										{#each statistiken.raumStats as raum}
-											<tr>
-												<td class="raum-name">{raum.name}</td>
-												<td class="centered">{raum.gesamt}</td>
-												<td class="centered">
-													{Object.entries(raum.personen).sort((a, b) => b[1] - a[1])[0]?.[0] || '-'}
-												</td>
-											</tr>
-										{/each}
-									</tbody>
-								</table>
+							<div class="chart-section">
+								<div class="bar-chart">
+									{#each statistiken.raumStats as raum}
+										<div class="bar-row">
+											<div class="bar-label">{raum.name}</div>
+											<div class="bar-container">
+												<div
+													class="bar bar-secondary"
+													style="width: {(raum.gesamt / statistiken.raumStats[0].gesamt * 100)}%"
+												>
+													<span class="bar-value">{raum.gesamt}</span>
+												</div>
+											</div>
+											<div class="bar-details">
+												{Object.entries(raum.personen).sort((a, b) => b[1] - a[1])[0]?.[0] || '-'}
+											</div>
+										</div>
+									{/each}
+								</div>
 							</div>
 						</section>
 					</div>
@@ -404,6 +463,115 @@
 		color: var(--accent-color);
 	}
 
+	.stat-value-small {
+		font-size: 1.2rem;
+		font-weight: 600;
+		color: var(--accent-color);
+	}
+
+	.stat-card.highlight {
+		background: linear-gradient(135deg, var(--accent-color) 0%, #764ba2 100%);
+		border-color: var(--accent-color);
+	}
+
+	.stat-card.highlight .stat-label,
+	.stat-card.highlight .stat-value {
+		color: white;
+	}
+
+	.personal-stats {
+		background: linear-gradient(135deg, #f5f7fa 0%, #e8f4f8 100%);
+		border-left: 4px solid var(--accent-color);
+	}
+
+	:global(.dark-mode) .personal-stats {
+		background: linear-gradient(135deg, #1a2332 0%, #2d3b4f 100%);
+	}
+
+	/* Balkendiagramme */
+	.chart-section {
+		margin-top: 16px;
+	}
+
+	.chart-section h4 {
+		margin: 0 0 12px 0;
+		font-size: 1rem;
+		color: var(--text-secondary);
+	}
+
+	.bar-chart {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.bar-row {
+		display: grid;
+		grid-template-columns: 150px 1fr 150px;
+		gap: 12px;
+		align-items: center;
+	}
+
+	.bar-label {
+		font-weight: 600;
+		color: var(--text-primary);
+		font-size: 0.9rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.bar-container {
+		position: relative;
+		height: 32px;
+		background: var(--border-color);
+		border-radius: 6px;
+		overflow: hidden;
+	}
+
+	.bar {
+		height: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		padding-right: 8px;
+		border-radius: 6px;
+		transition: width 0.5s ease;
+		min-width: 30px;
+	}
+
+	.bar-primary {
+		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+	}
+
+	.bar-secondary {
+		background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%);
+	}
+
+	.bar-personal {
+		background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%);
+	}
+
+	.bar-value {
+		font-weight: 700;
+		color: white;
+		font-size: 0.85rem;
+	}
+
+	.bar-details {
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		text-align: right;
+	}
+
+	.chart-note {
+		margin-top: 12px;
+		text-align: center;
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		font-style: italic;
+	}
+
 	.table-wrapper {
 		overflow-x: auto;
 	}
@@ -460,6 +628,16 @@
 
 		.stats-grid {
 			grid-template-columns: 1fr;
+		}
+
+		.bar-row {
+			grid-template-columns: 1fr;
+			gap: 6px;
+		}
+
+		.bar-details {
+			text-align: left;
+			font-size: 0.8rem;
 		}
 	}
 </style>

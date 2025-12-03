@@ -106,3 +106,15 @@ export async function setUserAdminStatus(userId, currentMetadata, isAdmin) {
 	const newMetadata = { ...currentMetadata, is_admin: isAdmin };
 	return await updateUserMetadata(userId, newMetadata);
 }
+
+/**
+ * Ordnet einem User einen Personen-Namen zu (nur für Admins)
+ * @param {string} userId - User-ID
+ * @param {object} currentMetadata - Aktuelle Metadata des Users
+ * @param {string} personName - Name der Person (oder null zum Entfernen)
+ * @returns {Promise<boolean>}
+ */
+export async function assignPersonToUser(userId, currentMetadata, personName) {
+	const newMetadata = { ...currentMetadata, assigned_person_name: personName };
+	return await updateUserMetadata(userId, newMetadata);
+}
