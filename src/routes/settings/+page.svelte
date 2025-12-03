@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { getPersonen, savePersonen, getRaeume, saveRaeume, getVorlagen, saveVorlagen } from '$lib/einstellungenService';
-	import { isCurrentUserAdmin, getAllUsers, createUser, removeMustChangePassword, setUserAdminStatus } from '$lib/userManagementService';
+	import { isCurrentUserAdmin, getAllUsers, createUser, removeMustChangePassword, setUserAdminStatus, assignPersonToUser } from '$lib/userManagementService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
 
@@ -171,7 +171,8 @@
 	async function handleToggleAdmin(user) {
 		const currentMetadata = {
 			is_admin: user.is_admin,
-			must_change_password: user.must_change_password
+			must_change_password: user.must_change_password,
+			assigned_person_name: user.assigned_person_name
 		};
 
 		const newAdminStatus = !user.is_admin;
@@ -185,6 +186,26 @@
 			users = await getAllUsers();
 		} else {
 			toast.show('Fehler beim Aktualisieren!', 'error');
+		}
+	}
+
+	async function handleAssignPerson(user, personName) {
+		const currentMetadata = {
+			is_admin: user.is_admin,
+			must_change_password: user.must_change_password,
+			assigned_person_name: user.assigned_person_name
+		};
+
+		const success = await assignPersonToUser(user.id, currentMetadata, personName || null);
+
+		if (success) {
+			toast.show(
+				personName ? `Person "${personName}" zugeordnet!` : 'Zuordnung entfernt!',
+				'success'
+			);
+			users = await getAllUsers();
+		} else {
+			toast.show('Fehler beim Zuordnen!', 'error');
 		}
 	}
 
@@ -243,6 +264,21 @@
 									{:else}
 										<span class="user-date user-never-logged-in">Noch nie eingeloggt</span>
 									{/if}
+									<!-- Zugeordnete Person -->
+									<div class="person-assignment">
+										<label for="person-{user.id}">Zugeordnete Person:</label>
+										<select
+											id="person-{user.id}"
+											value={user.assigned_person_name || ''}
+											on:change={(e) => handleAssignPerson(user, e.target.value)}
+											class="person-select"
+										>
+											<option value="">-- Keine Zuordnung --</option>
+											{#each personen as person}
+												<option value={person}>{person}</option>
+											{/each}
+										</select>
+									</div>
 								</div>
 							</div>
 							<div class="user-actions">
@@ -808,6 +844,41 @@
 	.user-never-logged-in {
 		color: #f44336;
 		font-weight: 500;
+	}
+
+	.person-assignment {
+		margin-top: 12px;
+		padding-top: 12px;
+		border-top: 1px solid var(--border-color);
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.person-assignment label {
+		font-size: 13px;
+		color: var(--text-secondary);
+		font-weight: 500;
+	}
+
+	.person-select {
+		padding: 8px 12px;
+		border: 2px solid var(--border-color);
+		border-radius: 6px;
+		font-size: 14px;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		cursor: pointer;
+		transition: border-color 0.2s;
+	}
+
+	.person-select:focus {
+		outline: none;
+		border-color: var(--accent-color);
+	}
+
+	.person-select:hover {
+		border-color: var(--accent-color);
 	}
 
 	.user-actions {

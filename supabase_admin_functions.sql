@@ -25,7 +25,8 @@ RETURNS TABLE (
     created_at timestamp with time zone,
     last_sign_in_at timestamp with time zone,
     is_admin boolean,
-    must_change_password boolean
+    must_change_password boolean,
+    assigned_person_name text
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -43,7 +44,8 @@ BEGIN
         u.created_at,
         u.last_sign_in_at,
         COALESCE((u.raw_user_meta_data ->> 'is_admin')::boolean, false) as is_admin,
-        COALESCE((u.raw_user_meta_data ->> 'must_change_password')::boolean, false) as must_change_password
+        COALESCE((u.raw_user_meta_data ->> 'must_change_password')::boolean, false) as must_change_password,
+        (u.raw_user_meta_data ->> 'assigned_person_name')::text as assigned_person_name
     FROM auth.users u
     ORDER BY u.created_at DESC;
 END;
