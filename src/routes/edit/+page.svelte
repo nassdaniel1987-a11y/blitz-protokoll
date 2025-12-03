@@ -81,6 +81,9 @@
 	let zuordnungStatus = {};
 	let kachelKlassen = {};
 
+	// Toggle für erweiterte Kacheln-Ansicht
+	let showDetailedKacheln = false;
+
 	// Berechne für alle Personen die Zuordnungen - reaktiv!
 	$: {
 		zuordnungStatus = {};
@@ -670,20 +673,7 @@
 				</section>
 			{/if}
 
-			{#if anwesenheitArray.length > 0}
-				<section class="section">
-					<PersonenKacheln
-						anwesendePersonen={anwesenheitArray}
-						planung={formData.planung}
-						{zeitslots}
-						{raeume}
-						{raumLabels}
-						on:update={handlePlanungUpdate}
-					/>
-				</section>
-			{/if}
-
-			<!-- PAINT MODE: Personen auswählen -->
+			<!-- PAINT MODE: Personen auswählen - IMMER sichtbar -->
 			{#if anwesenheitArray.length > 0}
 				<section class="section paint-mode-section">
 					<h2>✏️ Schnellzuweisung</h2>
@@ -706,6 +696,29 @@
 							</button>
 						{/each}
 					</div>
+
+					<!-- Toggle-Button für erweiterte Ansicht -->
+					<button
+						type="button"
+						class="toggle-detailed-btn"
+						on:click={() => showDetailedKacheln = !showDetailedKacheln}
+					>
+						{showDetailedKacheln ? '▼ Erweiterte Zuordnung ausblenden' : '▶ Erweiterte Zuordnung anzeigen'}
+					</button>
+
+					<!-- Erweiterte Kacheln-Ansicht (ausgeklappt) -->
+					{#if showDetailedKacheln}
+						<div class="detailed-kacheln-container">
+							<PersonenKacheln
+								anwesendePersonen={anwesenheitArray}
+								planung={formData.planung}
+								{zeitslots}
+								{raeume}
+								{raumLabels}
+								on:update={handlePlanungUpdate}
+							/>
+						</div>
+					{/if}
 				</section>
 			{/if}
 
@@ -1354,6 +1367,33 @@
 
 	.paint-mode-person.active .status-badge-paint {
 		background: rgba(255, 255, 255, 0.3);
+	}
+
+	/* Toggle-Button für erweiterte Ansicht */
+	.toggle-detailed-btn {
+		margin-top: 20px;
+		padding: 10px 20px;
+		background: var(--bg-primary);
+		border: 2px solid var(--border-color);
+		border-radius: 8px;
+		color: var(--text-primary);
+		font-size: 14px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		width: 100%;
+		text-align: center;
+	}
+
+	.toggle-detailed-btn:hover {
+		background: var(--border-color);
+		border-color: var(--accent-color);
+	}
+
+	.detailed-kacheln-container {
+		margin-top: 20px;
+		padding-top: 20px;
+		border-top: 2px solid var(--border-color);
 	}
 
 	/* Matrix-Zellen im Paint Mode */
