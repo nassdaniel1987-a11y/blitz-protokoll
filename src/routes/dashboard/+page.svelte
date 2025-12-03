@@ -9,6 +9,7 @@
 	import { toast } from '$lib/toastStore';
 	import Wochenansicht from '$lib/components/Wochenansicht.svelte';
 	import TeamNachrichtenModal from '$lib/components/TeamNachrichtenModal.svelte';
+	import StatistikModal from '$lib/components/StatistikModal.svelte';
 
 	let currentDate = getToday();
 	let protokoll = null;
@@ -17,6 +18,7 @@
 	let wochenDaten = [];
 	let currentUsername = '';
 	let showNachrichtenModal = false;
+	let showStatistikModal = false;
 	let messageCount = 0;
 	let realtimeChannel = null; // Realtime für Badge-Counter
 
@@ -185,6 +187,10 @@
 	{currentUsername}
 />
 
+<StatistikModal
+	bind:show={showStatistikModal}
+/>
+
 <div class="dashboard">
 	<header class="header no-print">
 		<h1>Blitz-Protokoll</h1>
@@ -194,6 +200,9 @@
 				{#if messageCount > 0}
 					<span class="badge">{messageCount}</span>
 				{/if}
+			</button>
+			<button on:click={() => showStatistikModal = true} class="statistik-btn" title="Statistiken">
+				📊
 			</button>
 			<button on:click={() => goto('/settings')} class="settings-btn" title="Einstellungen">
 				⚙️
@@ -451,6 +460,20 @@
 		border-radius: 10px;
 		min-width: 18px;
 		text-align: center;
+	}
+
+	.statistik-btn {
+		padding: 10px 14px;
+		background: var(--bg-primary);
+		border: 2px solid var(--border-color);
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 18px;
+		line-height: 1;
+	}
+
+	.statistik-btn:hover {
+		background: var(--border-color);
 	}
 
 	.settings-btn {
