@@ -77,6 +77,44 @@
 	// PAINT MODE: Ausgewählte Person für schnelles Zuweisen
 	let selectedPerson = null;
 
+	// PAINT MODE: Zuordnungsstatus für farbliche Kennzeichnung
+	let zuordnungStatus = {};
+	let kachelKlassen = {};
+
+	// Berechne für alle Personen die Zuordnungen - reaktiv!
+	$: {
+		zuordnungStatus = {};
+		anwesenheitArray.forEach(person => {
+			let zugeordneteSlots = 0;
+			zeitslots.forEach(slot => {
+				raeume.forEach(raum => {
+					const inhalt = formData.planung[slot]?.[raum] || '';
+					const personen = inhalt.split(',').map(p => p.trim()).filter(p => p);
+					if (personen.includes(person)) {
+						zugeordneteSlots++;
+					}
+				});
+			});
+			zuordnungStatus[person] = zugeordneteSlots;
+		});
+	}
+
+	// Berechne Farbklassen reaktiv basierend auf zuordnungStatus
+	$: {
+		kachelKlassen = {};
+		const maxSlots = zeitslots.length;
+		anwesenheitArray.forEach(person => {
+			const status = zuordnungStatus[person] || 0;
+			if (status === 0) {
+				kachelKlassen[person] = 'nicht-zugeordnet';
+			} else if (status >= maxSlots) {
+				kachelKlassen[person] = 'vollstaendig';
+			} else {
+				kachelKlassen[person] = 'teilweise';
+			}
+		});
+	}
+
 	// Team-Nachrichten
 	let currentUsername = '';
 	let showNachrichtenModal = false;
@@ -659,11 +697,12 @@
 						{#each anwesenheitArray as person}
 							<button
 								type="button"
-								class="paint-mode-person"
+								class="paint-mode-person {kachelKlassen[person] || 'nicht-zugeordnet'}"
 								class:active={selectedPerson === person}
 								on:click={() => selectPerson(person)}
 							>
-								{person}
+								<span class="person-name-paint">{person}</span>
+								<span class="status-badge-paint">{zuordnungStatus[person] || 0}/{zeitslots.length}</span>
 							</button>
 						{/each}
 					</div>
@@ -1199,13 +1238,13 @@
 
 	/* PAINT MODE Styles */
 	.paint-mode-section {
-		background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-		border-left: 4px solid #667eea;
+		background: linear-gradient(135deg, #e8f4f8 0%, #d4e4f7 100%);
+		border-left: 4px solid #3498db;
 	}
 
 	:global(.dark-mode) .paint-mode-section {
-		background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
-		border-left-color: #667eea;
+		background: linear-gradient(135deg, #1a2332 0%, #2d3b4f 100%);
+		border-left-color: #3498db;
 	}
 
 	.paint-mode-hint {
@@ -1236,9 +1275,14 @@
 	}
 
 	.paint-mode-person {
-		padding: 12px 20px;
-		background: var(--bg-secondary);
-		border: 2px solid #e2e8f0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		padding: 12px 16px;
+		background: var(--bg-primary);
+		border: 2px solid transparent;
 		border-radius: 8px;
 		cursor: pointer;
 		font-size: 15px;
@@ -1246,19 +1290,58 @@
 		color: var(--text-primary);
 		transition: all 0.2s ease;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		min-width: 100px;
 	}
 
 	:global(.dark-mode) .paint-mode-person {
-		background: #2d3748;
-		border-color: #4a5568;
-		color: #e2e8f0;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+	}
+
+	.person-name-paint {
+		font-weight: 600;
+		font-size: 15px;
+	}
+
+	.status-badge-paint {
+		font-size: 0.75rem;
+		padding: 2px 8px;
+		border-radius: 10px;
+		background: var(--border-color);
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	/* Farbcodierung für Paint Mode Buttons */
+	.paint-mode-person.nicht-zugeordnet {
+		border-color: #3498db;
+	}
+
+	.paint-mode-person.nicht-zugeordnet .status-badge-paint {
+		background: #3498db;
+		color: white;
+	}
+
+	.paint-mode-person.teilweise {
+		border-color: #f39c12;
+	}
+
+	.paint-mode-person.teilweise .status-badge-paint {
+		background: #f39c12;
+		color: white;
+	}
+
+	.paint-mode-person.vollstaendig {
+		border-color: #27ae60;
+	}
+
+	.paint-mode-person.vollstaendig .status-badge-paint {
+		background: #27ae60;
+		color: white;
 	}
 
 	.paint-mode-person:hover {
 		transform: translateY(-2px);
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-		border-color: #667eea;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 	}
 
 	:global(.dark-mode) .paint-mode-person:hover {
@@ -1269,9 +1352,17 @@
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		border-color: #667eea;
 		color: white;
-		font-weight: 600;
 		transform: scale(1.05);
 		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+	}
+
+	.paint-mode-person.active .person-name-paint,
+	.paint-mode-person.active .status-badge-paint {
+		color: white;
+	}
+
+	.paint-mode-person.active .status-badge-paint {
+		background: rgba(255, 255, 255, 0.3);
 	}
 
 	/* Matrix-Zellen im Paint Mode */
