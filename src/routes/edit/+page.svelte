@@ -693,16 +693,23 @@
 												class="matrix-cell"
 												class:paint-mode-active={selectedPerson}
 												on:click={() => togglePersonInFeld(slot, raum)}
-												title={selectedPerson ? `Klicken um ${selectedPerson} hinzuzufügen/zu entfernen` : 'Wähle zuerst eine Person oben aus'}
+												title={selectedPerson ? `Klicken um ${selectedPerson} hinzuzufügen/zu entfernen` : ''}
 											>
-												<textarea
-													bind:value={formData.planung[slot][raum]}
-													placeholder="..."
-													class="matrix-input"
-													rows="1"
-													on:input={autoResize}
-													on:click|stopPropagation
-												></textarea>
+												{#if selectedPerson}
+													<!-- Paint Mode: Zeige nur Text, ganze Zelle ist klickbar -->
+													<div class="matrix-text-display">
+														{formData.planung[slot][raum] || '...'}
+													</div>
+												{:else}
+													<!-- Normal Mode: Zeige Textarea zum Editieren -->
+													<textarea
+														bind:value={formData.planung[slot][raum]}
+														placeholder="..."
+														class="matrix-input"
+														rows="1"
+														on:input={autoResize}
+													></textarea>
+												{/if}
 											</td>
 										{/each}
 									</tr>
@@ -934,6 +941,18 @@
 	.matrix-input:focus {
 		border-color: var(--accent-color);
 		outline: none;
+	}
+
+	.matrix-text-display {
+		width: 100%;
+		padding: 8px;
+		font-size: 14px;
+		min-height: 36px;
+		line-height: 1.4;
+		color: var(--text-primary);
+		white-space: pre-wrap;
+		word-break: break-word;
+		text-align: center;
 	}
 
 	.button-group {
@@ -1185,7 +1204,7 @@
 	}
 
 	:global(.dark-mode) .paint-mode-section {
-		background: linear-gradient(135deg, #2d3748 0%, #3a4a5e 100%);
+		background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
 		border-left-color: #667eea;
 	}
 
@@ -1196,10 +1215,18 @@
 		line-height: 1.5;
 	}
 
+	:global(.dark-mode) .paint-mode-hint {
+		color: #a0aec0;
+	}
+
 	.selected-person-name {
 		color: #667eea;
 		font-weight: 600;
 		margin-left: 10px;
+	}
+
+	:global(.dark-mode) .selected-person-name {
+		color: #9f7aea;
 	}
 
 	.paint-mode-personen {
