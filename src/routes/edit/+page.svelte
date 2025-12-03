@@ -76,6 +76,7 @@
 
 	// PAINT MODE: Ausgewählte Person für schnelles Zuweisen
 	let selectedPerson = null;
+	let eraserMode = false; // Radierer-Modus
 
 	// PAINT MODE: Zuordnungsstatus für farbliche Kennzeichnung
 	let zuordnungStatus = {};
@@ -419,6 +420,7 @@
 
 	// PAINT MODE: Person auswählen
 	function selectPerson(person) {
+		eraserMode = false; // Radierer deaktivieren
 		if (selectedPerson === person) {
 			selectedPerson = null; // Deselektieren wenn nochmal geklickt
 		} else {
@@ -426,8 +428,22 @@
 		}
 	}
 
-	// PAINT MODE: Person in Tabellenfeld hinzufügen/entfernen (Toggle)
+	// PAINT MODE: Radierer aktivieren/deaktivieren
+	function toggleEraser() {
+		selectedPerson = null; // Person-Auswahl deaktivieren
+		eraserMode = !eraserMode;
+	}
+
+	// PAINT MODE: Person in Tabellenfeld hinzufügen/entfernen (Toggle) ODER löschen mit Radierer
 	function togglePersonInFeld(slot, raum) {
+		// Radierer-Modus: Komplette Zelle löschen
+		if (eraserMode) {
+			formData.planung[slot][raum] = '';
+			formData = formData;
+			return;
+		}
+
+		// Normale Person-Zuweisung
 		if (!selectedPerson) return; // Keine Person ausgewählt
 
 		const currentValue = formData.planung[slot][raum] || '';
@@ -678,9 +694,11 @@
 				<section class="section paint-mode-section">
 					<h2>✏️ Schnellzuweisung</h2>
 					<p class="paint-mode-hint">
-						Klicke auf eine Person, dann auf Felder in der Tabelle um sie hinzuzufügen/zu entfernen.
+						Klicke auf eine Person oder den Radierer, dann auf Felder in der Tabelle.
 						{#if selectedPerson}
 							<strong class="selected-person-name">Ausgewählt: {selectedPerson}</strong>
+						{:else if eraserMode}
+							<strong class="selected-person-name eraser-active">🗑️ Radierer aktiv</strong>
 						{/if}
 					</p>
 					<div class="paint-mode-personen">
@@ -695,6 +713,25 @@
 								<span class="status-badge-paint">{zuordnungStatus[person] || 0}/{zeitslots.length}</span>
 							</button>
 						{/each}
+
+						<!-- Radierer-Button -->
+						<button
+							type="button"
+							class="paint-mode-person eraser-btn"
+							class:active={eraserMode}
+							on:click={toggleEraser}
+							title="Radierer: Klicken um Zellen zu leeren"
+						>
+							<span class="person-name-paint">🗑️</span>
+							<span class="status-badge-paint">Radierer</span>
+						</button>
+					</div>
+
+					<!-- Legende -->
+					<div class="paint-mode-legende">
+						<span class="legende-item"><span class="dot nicht-zugeordnet"></span> Nicht zugeordnet</span>
+						<span class="legende-item"><span class="dot teilweise"></span> Teilweise zugeordnet</span>
+						<span class="legende-item"><span class="dot vollstaendig"></span> Vollständig zugeordnet</span>
 					</div>
 
 					<!-- Toggle-Button für erweiterte Ansicht -->
@@ -743,12 +780,13 @@
 										{#each zeitslots as slot}
 											<td
 												class="matrix-cell"
-												class:paint-mode-active={selectedPerson}
+												class:paint-mode-active={selectedPerson || eraserMode}
+												class:eraser-mode={eraserMode}
 												on:click={() => togglePersonInFeld(slot, raum)}
-												title={selectedPerson ? `Klicken um ${selectedPerson} hinzuzufügen/zu entfernen` : ''}
+												title={selectedPerson ? `Klicken um ${selectedPerson} hinzuzufügen/zu entfernen` : eraserMode ? 'Klicken um Zelle zu leeren' : ''}
 											>
-												{#if selectedPerson}
-													<!-- Paint Mode: Zeige nur Text, ganze Zelle ist klickbar -->
+												{#if selectedPerson || eraserMode}
+													<!-- Paint Mode/Radierer: Zeige nur Text, ganze Zelle ist klickbar -->
 													<div class="matrix-text-display">
 														{formData.planung[slot][raum] || '...'}
 													</div>
@@ -1272,6 +1310,14 @@
 		color: #9f7aea;
 	}
 
+	.selected-person-name.eraser-active {
+		color: #e74c3c;
+	}
+
+	:global(.dark-mode) .selected-person-name.eraser-active {
+		color: #ff6b6b;
+	}
+
 	.paint-mode-personen {
 		display: flex;
 		flex-wrap: wrap;
@@ -1369,6 +1415,62 @@
 		background: rgba(255, 255, 255, 0.3);
 	}
 
+	/* Radierer-Button */
+	.paint-mode-person.eraser-btn {
+		border-color: #95a5a6;
+	}
+
+	.paint-mode-person.eraser-btn .status-badge-paint {
+		background: #95a5a6;
+		color: white;
+	}
+
+	.paint-mode-person.eraser-btn.active {
+		background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+		border-color: #e74c3c;
+	}
+
+	.paint-mode-person.eraser-btn.active .status-badge-paint {
+		background: rgba(255, 255, 255, 0.3);
+	}
+
+	/* Legende */
+	.paint-mode-legende {
+		display: flex;
+		gap: 1.5rem;
+		flex-wrap: wrap;
+		font-size: 0.85rem;
+		padding-top: 15px;
+		margin-top: 15px;
+		border-top: 1px solid var(--border-color);
+		color: var(--text-secondary);
+	}
+
+	.legende-item {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.dot {
+		width: 14px;
+		height: 14px;
+		border-radius: 50%;
+		display: inline-block;
+	}
+
+	.dot.nicht-zugeordnet {
+		background: #3498db;
+	}
+
+	.dot.teilweise {
+		background: #f39c12;
+	}
+
+	.dot.vollstaendig {
+		background: #27ae60;
+	}
+
 	/* Toggle-Button für erweiterte Ansicht */
 	.toggle-detailed-btn {
 		margin-top: 20px;
@@ -1416,6 +1518,24 @@
 
 	.matrix-cell.paint-mode-active:hover::after {
 		content: '✏️';
+		position: absolute;
+		top: 5px;
+		right: 5px;
+		font-size: 14px;
+		opacity: 0.6;
+	}
+
+	/* Radierer-Modus Hover-Effekt */
+	.matrix-cell.eraser-mode:hover {
+		background-color: rgba(231, 76, 60, 0.1) !important;
+	}
+
+	:global(.dark-mode) .matrix-cell.eraser-mode:hover {
+		background-color: rgba(231, 76, 60, 0.2) !important;
+	}
+
+	.matrix-cell.eraser-mode:hover::after {
+		content: '🗑️';
 		position: absolute;
 		top: 5px;
 		right: 5px;
