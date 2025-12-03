@@ -483,12 +483,8 @@
 	}
 
 	.personal-stats {
-		background: linear-gradient(135deg, #f5f7fa 0%, #e8f4f8 100%);
-		border-left: 4px solid var(--accent-color);
-	}
-
-	:global(.dark-mode) .personal-stats {
-		background: linear-gradient(135deg, #1a2332 0%, #2d3b4f 100%);
+		background: var(--bg-primary);
+		border-left: 4px solid #27ae60;
 	}
 
 	/* Balkendiagramme */
