@@ -12,6 +12,7 @@
 	let error = null;
 	let currentUser = null;
 	let assignedPersonName = null; // Der zugeordnete Name des aktuellen Users
+	let showAllPersonen = false; // Toggle für alle Personen anzeigen
 
 	// Standard: Letzter Monat
 	onMount(async () => {
@@ -234,7 +235,7 @@
 							<h3>👥 Einteilungen pro Person</h3>
 							<div class="chart-section">
 								<div class="bar-chart">
-									{#each statistiken.personenStats.slice(0, 10) as person}
+									{#each (showAllPersonen ? statistiken.personenStats : statistiken.personenStats.slice(0, 10)) as person}
 										<div class="bar-row">
 											<div class="bar-label">{person.name}</div>
 											<div class="bar-container">
@@ -252,7 +253,9 @@
 									{/each}
 								</div>
 								{#if statistiken.personenStats.length > 10}
-									<p class="chart-note">Top 10 von {statistiken.personenStats.length} Personen</p>
+									<button class="toggle-all-btn" on:click={() => showAllPersonen = !showAllPersonen}>
+										{showAllPersonen ? '▲' : '▼'} {showAllPersonen ? 'Top 10 anzeigen' : `Alle ${statistiken.personenStats.length} Personen anzeigen`}
+									</button>
 								{/if}
 							</div>
 						</section>
@@ -570,6 +573,30 @@
 		font-size: 0.85rem;
 		color: var(--text-secondary);
 		font-style: italic;
+	}
+
+	.toggle-all-btn {
+		margin-top: 16px;
+		padding: 10px 16px;
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+		border: 2px solid var(--border-color);
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 0.9rem;
+		font-weight: 600;
+		width: 100%;
+		transition: all 0.2s ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+	}
+
+	.toggle-all-btn:hover {
+		background: var(--bg-primary);
+		border-color: var(--accent-color);
+		color: var(--accent-color);
 	}
 
 	.table-wrapper {
