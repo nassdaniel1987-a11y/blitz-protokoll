@@ -1238,13 +1238,8 @@
 
 	/* PAINT MODE Styles */
 	.paint-mode-section {
-		background: linear-gradient(135deg, #e8f4f8 0%, #d4e4f7 100%);
+		background: var(--bg-secondary);
 		border-left: 4px solid #3498db;
-	}
-
-	:global(.dark-mode) .paint-mode-section {
-		background: linear-gradient(135deg, #1a2332 0%, #2d3b4f 100%);
-		border-left-color: #3498db;
 	}
 
 	.paint-mode-hint {
@@ -1252,10 +1247,6 @@
 		margin-bottom: 15px;
 		font-size: 0.95rem;
 		line-height: 1.5;
-	}
-
-	:global(.dark-mode) .paint-mode-hint {
-		color: #a0aec0;
 	}
 
 	.selected-person-name {
