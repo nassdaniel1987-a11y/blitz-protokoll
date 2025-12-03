@@ -74,6 +74,9 @@
 	let selectedVorlageId = '';
 	let isNewProtokoll = true;
 
+	// PAINT MODE: Ausgewählte Person für schnelles Zuweisen
+	let selectedPerson = null;
+
 	// Team-Nachrichten
 	let currentUsername = '';
 	let showNachrichtenModal = false;
@@ -372,6 +375,36 @@
 		showNachrichtenModal = false;
 		loadMessageCount();
 	}
+
+	// PAINT MODE: Person auswählen
+	function selectPerson(person) {
+		if (selectedPerson === person) {
+			selectedPerson = null; // Deselektieren wenn nochmal geklickt
+		} else {
+			selectedPerson = person;
+		}
+	}
+
+	// PAINT MODE: Person in Tabellenfeld hinzufügen/entfernen (Toggle)
+	function togglePersonInFeld(slot, raum) {
+		if (!selectedPerson) return; // Keine Person ausgewählt
+
+		const currentValue = formData.planung[slot][raum] || '';
+		const personen = currentValue.split(',').map(p => p.trim()).filter(p => p);
+
+		if (personen.includes(selectedPerson)) {
+			// Person entfernen
+			const newPersonen = personen.filter(p => p !== selectedPerson);
+			formData.planung[slot][raum] = newPersonen.join(', ');
+		} else {
+			// Person hinzufügen
+			personen.push(selectedPerson);
+			formData.planung[slot][raum] = personen.join(', ');
+		}
+
+		// Trigger Reaktivität
+		formData = formData;
+	}
 </script>
 
 <TeamNachrichtenModal
@@ -612,6 +645,31 @@
 				</section>
 			{/if}
 
+			<!-- PAINT MODE: Personen auswählen -->
+			{#if anwesenheitArray.length > 0}
+				<section class="section paint-mode-section">
+					<h2>✏️ Schnellzuweisung</h2>
+					<p class="paint-mode-hint">
+						Klicke auf eine Person, dann auf Felder in der Tabelle um sie hinzuzufügen/zu entfernen.
+						{#if selectedPerson}
+							<strong class="selected-person-name">Ausgewählt: {selectedPerson}</strong>
+						{/if}
+					</p>
+					<div class="paint-mode-personen">
+						{#each anwesenheitArray as person}
+							<button
+								type="button"
+								class="paint-mode-person"
+								class:active={selectedPerson === person}
+								on:click={() => selectPerson(person)}
+							>
+								{person}
+							</button>
+						{/each}
+					</div>
+				</section>
+			{/if}
+
 			<section class="section">
 				<h2>Belegungsplanung (Übersicht)</h2>
 
@@ -631,13 +689,19 @@
 									<tr>
 										<td class="raum-label">{raumLabels[raum]}</td>
 										{#each zeitslots as slot}
-											<td>
+											<td
+												class="matrix-cell"
+												class:paint-mode-active={selectedPerson}
+												on:click={() => togglePersonInFeld(slot, raum)}
+												title={selectedPerson ? `Klicken um ${selectedPerson} hinzuzufügen/zu entfernen` : 'Wähle zuerst eine Person oben aus'}
+											>
 												<textarea
 													bind:value={formData.planung[slot][raum]}
 													placeholder="..."
 													class="matrix-input"
 													rows="1"
 													on:input={autoResize}
+													on:click|stopPropagation
 												></textarea>
 											</td>
 										{/each}
@@ -1112,6 +1176,97 @@
 
 	:global(.dark-mode) .warning-text strong {
 		color: #ffc107;
+	}
+
+	/* PAINT MODE Styles */
+	.paint-mode-section {
+		background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+		border-left: 4px solid #667eea;
+	}
+
+	:global(.dark-mode) .paint-mode-section {
+		background: linear-gradient(135deg, #2d3748 0%, #3a4a5e 100%);
+		border-left-color: #667eea;
+	}
+
+	.paint-mode-hint {
+		color: var(--text-secondary);
+		margin-bottom: 15px;
+		font-size: 0.95rem;
+		line-height: 1.5;
+	}
+
+	.selected-person-name {
+		color: #667eea;
+		font-weight: 600;
+		margin-left: 10px;
+	}
+
+	.paint-mode-personen {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+	}
+
+	.paint-mode-person {
+		padding: 12px 20px;
+		background: white;
+		border: 2px solid #e2e8f0;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 15px;
+		font-weight: 500;
+		color: var(--text-primary);
+		transition: all 0.2s ease;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	}
+
+	:global(.dark-mode) .paint-mode-person {
+		background: #2d3748;
+		border-color: #4a5568;
+		color: #e2e8f0;
+	}
+
+	.paint-mode-person:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+		border-color: #667eea;
+	}
+
+	.paint-mode-person.active {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		border-color: #667eea;
+		color: white;
+		font-weight: 600;
+		transform: scale(1.05);
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+	}
+
+	/* Matrix-Zellen im Paint Mode */
+	.matrix-cell {
+		position: relative;
+	}
+
+	.matrix-cell.paint-mode-active {
+		cursor: pointer;
+		transition: background-color 0.2s ease;
+	}
+
+	.matrix-cell.paint-mode-active:hover {
+		background-color: rgba(102, 126, 234, 0.1);
+	}
+
+	:global(.dark-mode) .matrix-cell.paint-mode-active:hover {
+		background-color: rgba(102, 126, 234, 0.2);
+	}
+
+	.matrix-cell.paint-mode-active:hover::after {
+		content: '✏️';
+		position: absolute;
+		top: 5px;
+		right: 5px;
+		font-size: 14px;
+		opacity: 0.6;
 	}
 
 	@media (max-width: 768px) {
