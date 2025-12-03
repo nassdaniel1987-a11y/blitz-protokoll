@@ -1237,7 +1237,7 @@
 
 	.paint-mode-person {
 		padding: 12px 20px;
-		background: white;
+		background: var(--bg-secondary);
 		border: 2px solid #e2e8f0;
 		border-radius: 8px;
 		cursor: pointer;
@@ -1252,12 +1252,17 @@
 		background: #2d3748;
 		border-color: #4a5568;
 		color: #e2e8f0;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 	}
 
 	.paint-mode-person:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 		border-color: #667eea;
+	}
+
+	:global(.dark-mode) .paint-mode-person:hover {
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 	}
 
 	.paint-mode-person.active {
