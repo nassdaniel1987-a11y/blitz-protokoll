@@ -69,34 +69,64 @@
 				const anwesenheit = protokoll.inhalt.anwesenheit?.split(',').map(p => p.trim()).filter(p => p) || [];
 				gesamtAnwesenheit += anwesenheit.length;
 
-				// Planung durchgehen
+				// Temporäre Zählung für DIESEN Tag
+				const tagesStats = {}; // { person: { raeume: {raum: count}, zeitslots: {slot: count} } }
+
+				// Planung durchgehen und temporär pro Tag zählen
 				const planung = protokoll.inhalt.planung || {};
 				Object.entries(planung).forEach(([zeitslot, raeume]) => {
 					Object.entries(raeume).forEach(([raum, personen]) => {
 						const personenListe = personen.split(',').map(p => p.trim()).filter(p => p);
 
 						personenListe.forEach(person => {
-							if (!personenStats[person]) {
-								personenStats[person] = {
-									gesamt: 0,
-									raeume: {},
-									zeitslots: {}
-								};
+							if (!tagesStats[person]) {
+								tagesStats[person] = { raeume: {}, zeitslots: {} };
 							}
-							personenStats[person].gesamt++;
-							personenStats[person].raeume[raum] = (personenStats[person].raeume[raum] || 0) + 1;
-							personenStats[person].zeitslots[zeitslot] = (personenStats[person].zeitslots[zeitslot] || 0) + 1;
-
-							if (!raumStats[raum]) {
-								raumStats[raum] = {
-									gesamt: 0,
-									personen: {}
-								};
-							}
-							raumStats[raum].gesamt++;
-							raumStats[raum].personen[person] = (raumStats[raum].personen[person] || 0) + 1;
+							tagesStats[person].raeume[raum] = (tagesStats[person].raeume[raum] || 0) + 1;
+							tagesStats[person].zeitslots[zeitslot] = (tagesStats[person].zeitslots[zeitslot] || 0) + 1;
 						});
 					});
+				});
+
+				// Jetzt für jede Person an diesem Tag den häufigsten Raum und Zeitslot ermitteln
+				Object.entries(tagesStats).forEach(([person, stats]) => {
+					// Finde Raum mit höchster Anzahl (Mehrheit)
+					const haeufigsterRaum = Object.entries(stats.raeume)
+						.sort((a, b) => b[1] - a[1])[0]?.[0];
+
+					// Finde Zeitslot mit höchster Anzahl (Mehrheit)
+					const haeufigsterZeitslot = Object.entries(stats.zeitslots)
+						.sort((a, b) => b[1] - a[1])[0]?.[0];
+
+					// Initialisiere Personen-Statistik falls nicht vorhanden
+					if (!personenStats[person]) {
+						personenStats[person] = {
+							gesamt: 0,
+							raeume: {},
+							zeitslots: {}
+						};
+					}
+
+					// Zähle diesen Tag (mit Mehrheitsraum und -zeitslot)
+					personenStats[person].gesamt++;
+					if (haeufigsterRaum) {
+						personenStats[person].raeume[haeufigsterRaum] = (personenStats[person].raeume[haeufigsterRaum] || 0) + 1;
+					}
+					if (haeufigsterZeitslot) {
+						personenStats[person].zeitslots[haeufigsterZeitslot] = (personenStats[person].zeitslots[haeufigsterZeitslot] || 0) + 1;
+					}
+
+					// Raumstatistik: Pro Tag einmal zählen (wenn Person Mehrheit in diesem Raum hatte)
+					if (haeufigsterRaum) {
+						if (!raumStats[haeufigsterRaum]) {
+							raumStats[haeufigsterRaum] = {
+								gesamt: 0,
+								personen: {}
+							};
+						}
+						raumStats[haeufigsterRaum].gesamt++;
+						raumStats[haeufigsterRaum].personen[person] = (raumStats[haeufigsterRaum].personen[person] || 0) + 1;
+					}
 				});
 			});
 
@@ -176,7 +206,7 @@
 								<h3>👤 Meine Statistiken</h3>
 								<div class="stats-grid">
 									<div class="stat-card highlight">
-										<div class="stat-label">Meine Einteilungen</div>
+										<div class="stat-label">Tage mit Einteilung</div>
 										<div class="stat-value">{statistiken.persoenlicheStats.gesamt}</div>
 									</div>
 									<div class="stat-card">
@@ -232,7 +262,7 @@
 
 						<!-- Personen-Statistiken -->
 						<section class="stats-section">
-							<h3>👥 Einteilungen pro Person</h3>
+							<h3>👥 Tage pro Person (Mehrheitsraum)</h3>
 							<div class="chart-section">
 								<div class="bar-chart">
 									{#each (showAllPersonen ? statistiken.personenStats : statistiken.personenStats.slice(0, 10)) as person}
@@ -262,7 +292,7 @@
 
 						<!-- Raum-Statistiken -->
 						<section class="stats-section">
-							<h3>🏠 Belegung pro Raum</h3>
+							<h3>🏠 Tage pro Raum (Mehrheit)</h3>
 							<div class="chart-section">
 								<div class="bar-chart">
 									{#each statistiken.raumStats as raum}
