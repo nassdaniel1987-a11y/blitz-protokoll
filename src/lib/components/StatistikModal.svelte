@@ -13,6 +13,8 @@
 	let currentUser = null;
 	let assignedPersonName = null; // Der zugeordnete Name des aktuellen Users
 	let showAllPersonen = false; // Toggle für alle Personen anzeigen
+	let expandedPersonen = {}; // Welche Personen sind aufgeklappt
+	let expandedRaeume = {}; // Welche Räume sind aufgeklappt
 
 	// Standard: Letzter Monat
 	onMount(async () => {
@@ -168,6 +170,16 @@
 			close();
 		}
 	}
+
+	function togglePerson(personName) {
+		expandedPersonen[personName] = !expandedPersonen[personName];
+		expandedPersonen = { ...expandedPersonen }; // Trigger reactivity
+	}
+
+	function toggleRaum(raumName) {
+		expandedRaeume[raumName] = !expandedRaeume[raumName];
+		expandedRaeume = { ...expandedRaeume }; // Trigger reactivity
+	}
 </script>
 
 {#if show}
@@ -262,23 +274,44 @@
 
 						<!-- Personen-Statistiken -->
 						<section class="stats-section">
-							<h3>👥 Tage pro Person (Mehrheitsraum)</h3>
+							<h3>👥 Tage pro Person (Detailliert)</h3>
 							<div class="chart-section">
 								<div class="bar-chart">
 									{#each (showAllPersonen ? statistiken.personenStats : statistiken.personenStats.slice(0, 10)) as person}
-										<div class="bar-row">
-											<div class="bar-label">{person.name}</div>
-											<div class="bar-container">
-												<div
-													class="bar bar-primary"
-													style="width: {(person.gesamt / statistiken.personenStats[0].gesamt * 100)}%"
-												>
-													<span class="bar-value">{person.gesamt}</span>
+										<div class="bar-row-wrapper">
+											<div class="bar-row clickable" on:click={() => togglePerson(person.name)}>
+												<div class="bar-label">
+													<span class="expand-icon">{expandedPersonen[person.name] ? '▼' : '▶'}</span>
+													{person.name}
+												</div>
+												<div class="bar-container">
+													<div
+														class="bar bar-primary"
+														style="width: {(person.gesamt / statistiken.personenStats[0].gesamt * 100)}%"
+													>
+														<span class="bar-value">{person.gesamt} Tage</span>
+													</div>
+												</div>
+												<div class="bar-details">
+													{Object.keys(person.raeume).length} Räume
 												</div>
 											</div>
-											<div class="bar-details">
-												{Object.entries(person.raeume).sort((a, b) => b[1] - a[1])[0]?.[0] || '-'}
-											</div>
+											{#if expandedPersonen[person.name]}
+												<div class="details-section">
+													<div class="details-title">Raumverteilung:</div>
+													<div class="details-list">
+														{#each Object.entries(person.raeume).sort((a, b) => b[1] - a[1]) as [raum, anzahl]}
+															<div class="detail-item">
+																<span class="detail-label">{raum}:</span>
+																<span class="detail-value">{anzahl} Tage</span>
+																<div class="detail-bar-mini">
+																	<div class="detail-bar-fill" style="width: {(anzahl / person.gesamt * 100)}%"></div>
+																</div>
+															</div>
+														{/each}
+													</div>
+												</div>
+											{/if}
 										</div>
 									{/each}
 								</div>
@@ -292,23 +325,44 @@
 
 						<!-- Raum-Statistiken -->
 						<section class="stats-section">
-							<h3>🏠 Tage pro Raum (Mehrheit)</h3>
+							<h3>🏠 Tage pro Raum (Detailliert)</h3>
 							<div class="chart-section">
 								<div class="bar-chart">
 									{#each statistiken.raumStats as raum}
-										<div class="bar-row">
-											<div class="bar-label">{raum.name}</div>
-											<div class="bar-container">
-												<div
-													class="bar bar-secondary"
-													style="width: {(raum.gesamt / statistiken.raumStats[0].gesamt * 100)}%"
-												>
-													<span class="bar-value">{raum.gesamt}</span>
+										<div class="bar-row-wrapper">
+											<div class="bar-row clickable" on:click={() => toggleRaum(raum.name)}>
+												<div class="bar-label">
+													<span class="expand-icon">{expandedRaeume[raum.name] ? '▼' : '▶'}</span>
+													{raum.name}
+												</div>
+												<div class="bar-container">
+													<div
+														class="bar bar-secondary"
+														style="width: {(raum.gesamt / statistiken.raumStats[0].gesamt * 100)}%"
+													>
+														<span class="bar-value">{raum.gesamt} Tage</span>
+													</div>
+												</div>
+												<div class="bar-details">
+													{Object.keys(raum.personen).length} Personen
 												</div>
 											</div>
-											<div class="bar-details">
-												{Object.entries(raum.personen).sort((a, b) => b[1] - a[1])[0]?.[0] || '-'}
-											</div>
+											{#if expandedRaeume[raum.name]}
+												<div class="details-section">
+													<div class="details-title">Personenverteilung:</div>
+													<div class="details-list">
+														{#each Object.entries(raum.personen).sort((a, b) => b[1] - a[1]) as [person, anzahl]}
+															<div class="detail-item">
+																<span class="detail-label">{person}:</span>
+																<span class="detail-value">{anzahl} Tage</span>
+																<div class="detail-bar-mini">
+																	<div class="detail-bar-fill" style="width: {(anzahl / raum.gesamt * 100)}%"></div>
+																</div>
+															</div>
+														{/each}
+													</div>
+												</div>
+											{/if}
 										</div>
 									{/each}
 								</div>
@@ -534,11 +588,26 @@
 		gap: 12px;
 	}
 
+	.bar-row-wrapper {
+		margin-bottom: 4px;
+	}
+
 	.bar-row {
 		display: grid;
 		grid-template-columns: 150px 1fr 150px;
 		gap: 12px;
 		align-items: center;
+		padding: 8px;
+		border-radius: 6px;
+		transition: background 0.2s;
+	}
+
+	.bar-row.clickable {
+		cursor: pointer;
+	}
+
+	.bar-row.clickable:hover {
+		background: var(--border-color);
 	}
 
 	.bar-label {
@@ -548,6 +617,15 @@
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.expand-icon {
+		font-size: 0.7rem;
+		color: var(--text-secondary);
+		flex-shrink: 0;
 	}
 
 	.bar-container {
@@ -591,6 +669,75 @@
 		font-size: 0.85rem;
 		color: var(--text-secondary);
 		text-align: right;
+	}
+
+	.details-section {
+		background: var(--bg-secondary);
+		margin: 8px 0 12px 24px;
+		padding: 16px;
+		border-radius: 8px;
+		border-left: 3px solid var(--accent-color);
+		animation: slideDown 0.3s ease;
+	}
+
+	@keyframes slideDown {
+		from {
+			opacity: 0;
+			max-height: 0;
+		}
+		to {
+			opacity: 1;
+			max-height: 500px;
+		}
+	}
+
+	.details-title {
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--text-secondary);
+		margin-bottom: 12px;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	.details-list {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.detail-item {
+		display: grid;
+		grid-template-columns: 120px 80px 1fr;
+		gap: 12px;
+		align-items: center;
+		padding: 6px 0;
+	}
+
+	.detail-label {
+		font-size: 0.85rem;
+		color: var(--text-primary);
+		font-weight: 500;
+	}
+
+	.detail-value {
+		font-size: 0.85rem;
+		color: var(--accent-color);
+		font-weight: 600;
+	}
+
+	.detail-bar-mini {
+		height: 8px;
+		background: var(--border-color);
+		border-radius: 4px;
+		overflow: hidden;
+	}
+
+	.detail-bar-fill {
+		height: 100%;
+		background: linear-gradient(90deg, var(--accent-color) 0%, #764ba2 100%);
+		border-radius: 4px;
+		transition: width 0.3s ease;
 	}
 
 	.chart-note {
@@ -691,6 +838,19 @@
 		.bar-details {
 			text-align: left;
 			font-size: 0.8rem;
+		}
+
+		.detail-item {
+			grid-template-columns: 1fr;
+			gap: 4px;
+		}
+
+		.detail-bar-mini {
+			width: 100%;
+		}
+
+		.details-section {
+			margin-left: 12px;
 		}
 	}
 </style>
