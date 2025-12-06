@@ -196,19 +196,23 @@
 		<h1>Blitz-Protokoll</h1>
 		<div class="header-actions">
 			<button on:click={openNachrichtenModal} class="nachrichten-btn" title="Team-Notizen">
-				📝
+				<span class="btn-icon">📝</span>
+				<span class="btn-text">Team-Notizen</span>
 				{#if messageCount > 0}
 					<span class="badge">{messageCount}</span>
 				{/if}
 			</button>
 			<button on:click={() => showStatistikModal = true} class="statistik-btn" title="Statistiken">
-				📊
+				<span class="btn-icon">📊</span>
+				<span class="btn-text">Statistiken</span>
 			</button>
 			<button on:click={() => goto('/settings')} class="settings-btn" title="Einstellungen">
-				⚙️
+				<span class="btn-icon">⚙️</span>
+				<span class="btn-text">Einstellungen</span>
 			</button>
 			<button on:click={() => $darkMode = !$darkMode} class="dark-mode-toggle" title="Dark Mode umschalten">
-				{$darkMode ? '☀️' : '🌙'}
+				<span class="btn-icon">{$darkMode ? '☀️' : '🌙'}</span>
+				<span class="btn-text">{$darkMode ? 'Hell' : 'Dunkel'}</span>
 			</button>
 			<button on:click={handleLogout} class="logout-btn">Abmelden</button>
 		</div>
@@ -435,17 +439,33 @@
 
 	.nachrichten-btn {
 		position: relative;
-		padding: 10px 14px;
+		padding: 10px 16px;
 		background: var(--bg-primary);
 		border: 2px solid var(--border-color);
-		border-radius: 6px;
+		border-radius: 8px;
 		cursor: pointer;
-		font-size: 18px;
+		font-size: 14px;
 		line-height: 1;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		transition: all 0.2s;
 	}
 
 	.nachrichten-btn:hover {
 		background: var(--border-color);
+		transform: translateY(-1px);
+	}
+
+	.btn-icon {
+		font-size: 16px;
+		line-height: 1;
+	}
+
+	.btn-text {
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--text-primary);
 	}
 
 	.nachrichten-btn .badge {
@@ -463,45 +483,60 @@
 	}
 
 	.statistik-btn {
-		padding: 10px 14px;
+		padding: 10px 16px;
 		background: var(--bg-primary);
 		border: 2px solid var(--border-color);
-		border-radius: 6px;
+		border-radius: 8px;
 		cursor: pointer;
-		font-size: 18px;
+		font-size: 14px;
 		line-height: 1;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		transition: all 0.2s;
 	}
 
 	.statistik-btn:hover {
 		background: var(--border-color);
+		transform: translateY(-1px);
 	}
 
 	.settings-btn {
-		padding: 10px 14px;
+		padding: 10px 16px;
 		background: var(--bg-primary);
 		border: 2px solid var(--border-color);
-		border-radius: 6px;
+		border-radius: 8px;
 		cursor: pointer;
-		font-size: 18px;
+		font-size: 14px;
 		line-height: 1;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		transition: all 0.2s;
 	}
 
 	.settings-btn:hover {
 		background: var(--border-color);
+		transform: translateY(-1px);
 	}
 
 	.dark-mode-toggle {
-		padding: 10px 14px;
+		padding: 10px 16px;
 		background: var(--bg-primary);
 		border: 2px solid var(--border-color);
-		border-radius: 6px;
+		border-radius: 8px;
 		cursor: pointer;
-		font-size: 18px;
+		font-size: 14px;
 		line-height: 1;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		transition: all 0.2s;
 	}
 
 	.dark-mode-toggle:hover {
 		background: var(--border-color);
+		transform: translateY(-1px);
 	}
 
 	.logout-btn {
@@ -867,6 +902,22 @@
 		.header-actions {
 			width: 100%;
 			justify-content: center;
+			flex-wrap: wrap;
+		}
+
+		.btn-text {
+			display: none;
+		}
+
+		.btn-icon {
+			font-size: 18px;
+		}
+
+		.nachrichten-btn,
+		.statistik-btn,
+		.settings-btn,
+		.dark-mode-toggle {
+			padding: 12px 14px;
 		}
 
 		.date-nav {
