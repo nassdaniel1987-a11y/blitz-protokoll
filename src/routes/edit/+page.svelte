@@ -188,6 +188,10 @@
 		} else {
 			isNewProtokoll = true;
 			formData = createEmptyProtokoll();
+			// NEU: Bei neuem Protokoll sind standardmäßig ALLE Personen anwesend
+			anwesenheitArray = [...allePersonen];
+			formData.anwesenheit = arrayToString(anwesenheitArray);
+			formData.abwesend = ''; // Niemand abwesend
 		}
 		loading = false;
 
@@ -403,6 +407,39 @@
 		toast.show(`Vorlage "${vorlage.name}" wurde angewendet!`, 'success');
 	}
 
+	async function copyFromYesterday() {
+		// Berechne das gestrige Datum
+		const date = new Date(currentDate);
+		date.setDate(date.getDate() - 1);
+		const yesterday = date.toISOString().split('T')[0];
+
+		// Lade das gestrige Protokoll
+		const yesterdayProtokoll = await getProtokoll(yesterday);
+
+		if (!yesterdayProtokoll) {
+			toast.show('Kein Protokoll von gestern gefunden!', 'error');
+			return;
+		}
+
+		// Kopiere die Daten (aber nicht das Datum!)
+		formData = JSON.parse(JSON.stringify(yesterdayProtokoll.inhalt));
+		anwesenheitArray = parsePersonenString(formData.anwesenheit);
+
+		// Stelle sicher, dass alle Zeitslots/Räume existieren
+		zeitslots.forEach(slot => {
+			if (!formData.planung[slot]) {
+				formData.planung[slot] = {};
+			}
+			raeume.forEach(raum => {
+				if (formData.planung[slot][raum] === undefined) {
+					formData.planung[slot][raum] = '';
+				}
+			});
+		});
+
+		toast.show('✓ Daten von gestern kopiert!', 'success');
+	}
+
 	async function loadMessageCount() {
 		const nachrichten = await getNachrichten();
 		messageCount = nachrichten.length;
@@ -508,28 +545,46 @@
 			</div>
 		{/if}
 
-		{#if isNewProtokoll && vorlagen.length > 0}
+		{#if isNewProtokoll}
 			<section class="section vorlage-section">
-				<h2>Aus Vorlage erstellen</h2>
+				<h2>Schnellstart</h2>
 				<p class="vorlage-description">
-					Du kannst eine vorhandene Vorlage als Ausgangspunkt verwenden.
+					Starte mit einer Vorlage oder kopiere das gestrige Protokoll.
 				</p>
-				<div class="vorlage-auswahl">
-					<select bind:value={selectedVorlageId} class="vorlage-select">
-						<option value="">-- Keine Vorlage verwenden --</option>
-						{#each vorlagen as vorlage}
-							<option value={vorlage.id}>{vorlage.name}</option>
-						{/each}
-					</select>
+
+				<!-- Von gestern kopieren Button -->
+				<div class="quick-action-group">
 					<button
 						type="button"
-						on:click={applyVorlage}
-						disabled={!selectedVorlageId}
-						class="vorlage-apply-btn"
+						on:click={copyFromYesterday}
+						class="copy-yesterday-btn"
 					>
-						Vorlage anwenden
+						<span class="btn-icon">📋</span>
+						<span class="btn-text">Von gestern kopieren</span>
 					</button>
 				</div>
+
+				{#if vorlagen.length > 0}
+					<div class="divider">
+						<span>oder</span>
+					</div>
+					<div class="vorlage-auswahl">
+						<select bind:value={selectedVorlageId} class="vorlage-select">
+							<option value="">-- Vorlage auswählen --</option>
+							{#each vorlagen as vorlage}
+								<option value={vorlage.id}>{vorlage.name}</option>
+							{/each}
+						</select>
+						<button
+							type="button"
+							on:click={applyVorlage}
+							disabled={!selectedVorlageId}
+							class="vorlage-apply-btn"
+						>
+							Vorlage anwenden
+						</button>
+					</div>
+				{/if}
 			</section>
 		{/if}
 
@@ -538,18 +593,23 @@
 				<h2>Allgemeine Informationen</h2>
 				
 				<div class="form-group">
-					<label for="anwesenheit">Anwesenheit</label>
+					<label for="anwesenheit">
+						Anwesenheit
+						{#if isNewProtokoll}
+							<span class="label-hint">(Alle sind vorausgewählt - abwesende Personen abwählen)</span>
+						{/if}
+					</label>
 					<div class="input-with-button">
-						<input 
-							type="text" 
-							id="anwesenheit" 
+						<input
+							type="text"
+							id="anwesenheit"
 							bind:value={formData.anwesenheit}
 							placeholder="Klicken, um Anwesenheit zu bearbeiten..."
 							on:click={() => showAnwesenheitModal = true}
 							readonly
 						/>
-						<button 
-							type="button" 
+						<button
+							type="button"
 							class="select-btn"
 							on:click={() => showAnwesenheitModal = true}
 						>
@@ -1225,6 +1285,70 @@
 	.vorlage-apply-btn:disabled {
 		background: #ccc;
 		cursor: not-allowed;
+	}
+
+	.quick-action-group {
+		margin-bottom: 20px;
+	}
+
+	.copy-yesterday-btn {
+		width: 100%;
+		padding: 16px 24px;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		border-radius: 12px;
+		cursor: pointer;
+		font-size: 16px;
+		font-weight: 600;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 10px;
+		transition: all 0.3s ease;
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+	}
+
+	.copy-yesterday-btn:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+	}
+
+	.copy-yesterday-btn .btn-icon {
+		font-size: 20px;
+	}
+
+	.copy-yesterday-btn .btn-text {
+		font-size: 16px;
+	}
+
+	.divider {
+		display: flex;
+		align-items: center;
+		text-align: center;
+		margin: 20px 0;
+		color: var(--text-secondary);
+		font-size: 0.9rem;
+		font-weight: 500;
+	}
+
+	.divider::before,
+	.divider::after {
+		content: '';
+		flex: 1;
+		border-bottom: 2px solid var(--border-color);
+	}
+
+	.divider span {
+		padding: 0 15px;
+	}
+
+	.label-hint {
+		font-size: 0.85rem;
+		font-weight: 400;
+		color: var(--text-secondary);
+		font-style: italic;
+		margin-left: 8px;
 	}
 
 	/* REALTIME: Warnung für gleichzeitiges Bearbeiten */
