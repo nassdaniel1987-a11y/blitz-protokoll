@@ -235,23 +235,23 @@
 				</div>
 
 				<div class="tip-box">
-					<div class="tip-icon">❓</div>
-					<div class="tip-content">
-						<h3>Hilfe-Buttons nutzen</h3>
-						<p>
-							Bei vielen Funktionen findest du kleine <strong>?</strong>-Buttons.
-							Diese erklären dir, was die Funktion macht.
-						</p>
-					</div>
-				</div>
-
-				<div class="tip-box">
 					<div class="tip-icon">📋</div>
 					<div class="tip-content">
 						<h3>Schnell starten mit "Von gestern kopieren"</h3>
 						<p>
 							Beim Erstellen neuer Protokolle kannst du die Daten vom Vortag kopieren
-							und nur die Änderungen anpassen.
+							und nur die Änderungen anpassen. Spart viel Zeit!
+						</p>
+					</div>
+				</div>
+
+				<div class="tip-box">
+					<div class="tip-icon">❓</div>
+					<div class="tip-content">
+						<h3>Hilfe-Buttons nutzen</h3>
+						<p>
+							Bei vielen Funktionen findest du kleine <strong>?</strong>-Buttons.
+							Diese erklären dir, was die jeweilige Funktion macht.
 						</p>
 					</div>
 				</div>

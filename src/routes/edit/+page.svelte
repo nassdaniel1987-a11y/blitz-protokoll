@@ -508,6 +508,14 @@
 		formData = formData;
 	}
 
+	function toggleTooltip(tooltipId) {
+		if (activeTooltip === tooltipId) {
+			activeTooltip = null;
+		} else {
+			activeTooltip = tooltipId;
+		}
+	}
+
 	// Als Vorlage speichern
 	async function saveAsTemplate() {
 		if (!templateName.trim()) {
@@ -639,7 +647,17 @@
 
 		{#if isNewProtokoll}
 			<section class="section vorlage-section">
-				<h2>Schnellstart</h2>
+				<h2>
+					Schnellstart
+					<button class="help-btn" on:click={() => toggleTooltip('schnellstart')} title="Hilfe">?</button>
+					{#if activeTooltip === 'schnellstart'}
+						<div class="tooltip-box">
+							<strong>Schnellstart-Optionen:</strong>
+							<br>Kopiere das gestrige Protokoll als Ausgangspunkt oder wähle eine gespeicherte Vorlage.
+							Das spart dir viel Tipparbeit!
+						</div>
+					{/if}
+				</h2>
 				<p class="vorlage-description">
 					Starte mit einer Vorlage oder kopiere das gestrige Protokoll.
 				</p>
@@ -682,8 +700,18 @@
 
 		<form on:submit|preventDefault={handleSave}>
 			<section class="section">
-				<h2>Allgemeine Informationen</h2>
-				
+				<h2>
+					Allgemeine Informationen
+					<button class="help-btn" on:click={() => toggleTooltip('anwesenheit')} title="Hilfe">?</button>
+					{#if activeTooltip === 'anwesenheit'}
+						<div class="tooltip-box">
+							<strong>Anwesenheit bearbeiten:</strong>
+							<br>Bei neuen Protokollen sind alle Personen vorausgewählt. Wähle nur die Abwesenden ab!
+							Das "Abwesend"-Feld wird automatisch ausgefüllt.
+						</div>
+					{/if}
+				</h2>
+
 				<div class="form-group">
 					<label for="anwesenheit">
 						Anwesenheit
@@ -912,7 +940,17 @@
 			{/if}
 
 			<section class="section">
-				<h2>Belegungsplanung (Übersicht)</h2>
+				<h2>
+					Belegungsplanung (Übersicht)
+					<button class="help-btn" on:click={() => toggleTooltip('planung')} title="Hilfe">?</button>
+					{#if activeTooltip === 'planung'}
+						<div class="tooltip-box">
+							<strong>Belegungsplanung:</strong>
+							<br>Trage hier ein, welche Personen zu welchen Zeiten in welchen Räumen sind.
+							Tipp: Nutze den Paint-Modus (Personenkacheln) für schnelleres Zuweisen!
+						</div>
+					{/if}
+				</h2>
 
 				<div class="matrix-container">
 					<div class="matrix-scroll">
@@ -1535,6 +1573,69 @@
 		color: var(--text-secondary);
 		font-style: italic;
 		margin-left: 8px;
+	}
+
+	/* Hilfe-Buttons und Tooltips */
+	.help-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		background: var(--accent-color);
+		color: white;
+		border: none;
+		font-size: 14px;
+		font-weight: 700;
+		cursor: pointer;
+		margin-left: 10px;
+		transition: all 0.2s;
+		vertical-align: middle;
+	}
+
+	.help-btn:hover {
+		background: var(--accent-hover);
+		transform: scale(1.1);
+	}
+
+	h2 {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+	}
+
+	.tooltip-box {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		margin-top: 10px;
+		padding: 12px 16px;
+		background: var(--bg-primary);
+		border: 2px solid var(--accent-color);
+		border-radius: 8px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		z-index: 100;
+		max-width: 400px;
+		font-size: 0.9rem;
+		line-height: 1.5;
+		color: var(--text-primary);
+		animation: tooltipFadeIn 0.2s ease;
+	}
+
+	@keyframes tooltipFadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(-5px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.tooltip-box strong {
+		color: var(--accent-color);
 	}
 
 	/* TESTMODUS: Banner */
