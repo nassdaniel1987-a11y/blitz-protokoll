@@ -872,7 +872,17 @@
 			<!-- PAINT MODE: Personen auswählen - IMMER sichtbar -->
 			{#if anwesenheitArray.length > 0}
 				<section class="section paint-mode-section">
-					<h2>✏️ Schnellzuweisung</h2>
+					<h2>
+						✏️ Schnellzuweisung
+						<button type="button" class="help-btn" on:click={() => toggleTooltip('schnellzuweisung')} title="Hilfe">?</button>
+						{#if activeTooltip === 'schnellzuweisung'}
+							<div class="tooltip-box">
+								<strong>Schnellzuweisung:</strong>
+								<br>Wähle eine Person aus (wird farbig markiert), dann klicke auf beliebige Felder in der Tabelle, um diese Person schnell zuzuweisen.
+								Mit dem Radierer kannst du Zuweisungen schnell löschen. Die Zahlen zeigen dir, wie viele Zeitslots die Person bereits hat.
+							</div>
+						{/if}
+					</h2>
 					<p class="paint-mode-hint">
 						Klicke auf eine Person oder den Radierer, dann auf Felder in der Tabelle.
 						{#if selectedPerson}
