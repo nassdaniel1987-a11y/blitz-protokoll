@@ -21,6 +21,7 @@
 	let showStatistikModal = false;
 	let messageCount = 0;
 	let realtimeChannel = null; // Realtime für Badge-Counter
+	let showOnboardingModal = false; // Onboarding für neue Nutzer
 
 	// Raumliste - wird dynamisch geladen
 	let raeume = [];
@@ -38,6 +39,15 @@
 		// Username extrahieren (von email)
 		const email = data.session.user.email;
 		currentUsername = email.split('@')[0];
+
+		// Prüfe ob Nutzer neu ist (Onboarding noch nicht gesehen)
+		const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
+		if (!hasSeenOnboarding) {
+			// Zeige Onboarding nach kurzer Verzögerung
+			setTimeout(() => {
+				showOnboardingModal = true;
+			}, 500);
+		}
 
 		// Räume laden
 		const raumDaten = await getRaeume();
@@ -180,6 +190,16 @@
 		showNachrichtenModal = false;
 		loadMessageCount();
 	}
+
+	function closeOnboarding() {
+		showOnboardingModal = false;
+		localStorage.setItem('hasSeenOnboarding', 'true');
+	}
+
+	function goToTestMode() {
+		closeOnboarding();
+		goto(`/edit?date=test-${currentUsername}`);
+	}
 </script>
 
 <TeamNachrichtenModal
@@ -190,6 +210,64 @@
 <StatistikModal
 	bind:show={showStatistikModal}
 />
+
+<!-- Onboarding Modal für neue Nutzer -->
+{#if showOnboardingModal}
+	<div class="modal-overlay onboarding-overlay">
+		<div class="modal-content onboarding-modal">
+			<div class="onboarding-header">
+				<h2>🎉 Willkommen bei Blitz-Protokoll!</h2>
+			</div>
+			<div class="onboarding-body">
+				<p class="welcome-text">
+					Schön, dass du hier bist! Bevor du loslegst, hier ein paar Tipps:
+				</p>
+
+				<div class="tip-box">
+					<div class="tip-icon">🧪</div>
+					<div class="tip-content">
+						<h3>Probiere die Testumgebung aus!</h3>
+						<p>
+							Im <strong>Testmodus</strong> kannst du gefahrlos alle Funktionen ausprobieren.
+							Alles was du dort machst, hat keinen Einfluss auf echte Protokolle.
+						</p>
+					</div>
+				</div>
+
+				<div class="tip-box">
+					<div class="tip-icon">❓</div>
+					<div class="tip-content">
+						<h3>Hilfe-Buttons nutzen</h3>
+						<p>
+							Bei vielen Funktionen findest du kleine <strong>?</strong>-Buttons.
+							Diese erklären dir, was die Funktion macht.
+						</p>
+					</div>
+				</div>
+
+				<div class="tip-box">
+					<div class="tip-icon">📋</div>
+					<div class="tip-content">
+						<h3>Schnell starten mit "Von gestern kopieren"</h3>
+						<p>
+							Beim Erstellen neuer Protokolle kannst du die Daten vom Vortag kopieren
+							und nur die Änderungen anpassen.
+						</p>
+					</div>
+				</div>
+
+				<div class="onboarding-actions">
+					<button on:click={closeOnboarding} class="btn-later">
+						Später
+					</button>
+					<button on:click={goToTestMode} class="btn-test">
+						🧪 Zur Testumgebung
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <div class="dashboard">
 	<header class="header no-print">
@@ -984,6 +1062,132 @@
 
 	.print-btn:hover {
 		background: #218838;
+	}
+
+	/* Onboarding Modal */
+	.onboarding-overlay {
+		z-index: 2000;
+		animation: fadeIn 0.3s ease;
+	}
+
+	@keyframes fadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+
+	.onboarding-modal {
+		background: var(--bg-secondary);
+		border-radius: 16px;
+		max-width: 600px;
+		width: 90%;
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+		animation: slideUp 0.4s ease;
+	}
+
+	@keyframes slideUp {
+		from {
+			opacity: 0;
+			transform: translateY(30px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.onboarding-header {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		padding: 30px;
+		border-radius: 16px 16px 0 0;
+		text-align: center;
+	}
+
+	.onboarding-header h2 {
+		margin: 0;
+		font-size: 1.8rem;
+	}
+
+	.onboarding-body {
+		padding: 30px;
+	}
+
+	.welcome-text {
+		color: var(--text-primary);
+		font-size: 1.1rem;
+		margin-bottom: 25px;
+		text-align: center;
+	}
+
+	.tip-box {
+		display: flex;
+		gap: 15px;
+		align-items: flex-start;
+		padding: 20px;
+		background: var(--bg-primary);
+		border-radius: 12px;
+		margin-bottom: 15px;
+		border-left: 4px solid var(--accent-color);
+	}
+
+	.tip-icon {
+		font-size: 32px;
+		flex-shrink: 0;
+	}
+
+	.tip-content h3 {
+		margin: 0 0 8px 0;
+		color: var(--text-primary);
+		font-size: 1.1rem;
+	}
+
+	.tip-content p {
+		margin: 0;
+		color: var(--text-secondary);
+		line-height: 1.5;
+		font-size: 0.95rem;
+	}
+
+	.onboarding-actions {
+		display: flex;
+		gap: 15px;
+		margin-top: 30px;
+	}
+
+	.btn-later {
+		flex: 1;
+		padding: 14px 24px;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		border: 2px solid var(--border-color);
+		border-radius: 10px;
+		font-size: 16px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.btn-later:hover {
+		background: var(--border-color);
+	}
+
+	.btn-test {
+		flex: 2;
+		padding: 14px 24px;
+		background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+		color: white;
+		border: none;
+		border-radius: 10px;
+		font-size: 16px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+		box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+	}
+
+	.btn-test:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 16px rgba(245, 87, 108, 0.4);
 	}
 
 	@media print {

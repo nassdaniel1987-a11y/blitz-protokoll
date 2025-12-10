@@ -65,6 +65,9 @@
 	// Vorlage-Speichern Modal
 	let showSaveTemplateModal = false;
 	let templateName = '';
+
+	// Hilfe-Tooltips
+	let activeTooltip = null;
 	
 	// NEU: Variable für die komplette Personenliste
 	let allePersonen = [];
