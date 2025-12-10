@@ -530,6 +530,20 @@
 			</button>
 		</div>
 
+		<!-- TESTMODUS: Banner wenn Test-Protokoll -->
+		{#if currentDate.startsWith('test-')}
+			<div class="test-mode-banner">
+				<div class="test-icon">🧪</div>
+				<div class="test-content">
+					<div class="test-title">TESTMODUS AKTIV</div>
+					<div class="test-description">
+						Dies ist dein persönliches Übungsprotokoll. Hier kannst du alles ausprobieren!
+						Testprotokolle erscheinen nicht in Statistiken und können beliebig gelöscht werden.
+					</div>
+				</div>
+			</div>
+		{/if}
+
 		<!-- REALTIME: Warnung wenn andere Editoren aktiv sind -->
 		{#if activeEditors.length > 0}
 			<div class="realtime-warning">
@@ -1349,6 +1363,70 @@
 		color: var(--text-secondary);
 		font-style: italic;
 		margin-left: 8px;
+	}
+
+	/* TESTMODUS: Banner */
+	.test-mode-banner {
+		display: flex;
+		align-items: center;
+		gap: 20px;
+		padding: 20px;
+		background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+		border: 3px solid #f5576c;
+		border-radius: 12px;
+		margin-bottom: 20px;
+		animation: pulse-test 3s ease-in-out infinite;
+		box-shadow: 0 4px 20px rgba(245, 87, 108, 0.4);
+	}
+
+	:global(.dark-mode) .test-mode-banner {
+		background: linear-gradient(135deg, #d87de6 0%, #d4485a 100%);
+		border-color: #d4485a;
+	}
+
+	@keyframes pulse-test {
+		0%, 100% {
+			opacity: 1;
+			transform: scale(1);
+		}
+		50% {
+			opacity: 0.95;
+			transform: scale(1.005);
+		}
+	}
+
+	.test-icon {
+		font-size: 48px;
+		flex-shrink: 0;
+		animation: rotate-test 4s linear infinite;
+	}
+
+	@keyframes rotate-test {
+		0% { transform: rotate(0deg); }
+		10% { transform: rotate(10deg); }
+		20% { transform: rotate(-10deg); }
+		30% { transform: rotate(10deg); }
+		40% { transform: rotate(0deg); }
+		100% { transform: rotate(0deg); }
+	}
+
+	.test-content {
+		flex: 1;
+		color: white;
+	}
+
+	.test-title {
+		font-size: 1.3rem;
+		font-weight: 700;
+		margin-bottom: 8px;
+		text-transform: uppercase;
+		letter-spacing: 1px;
+	}
+
+	.test-description {
+		font-size: 0.95rem;
+		line-height: 1.5;
+		opacity: 0.95;
 	}
 
 	/* REALTIME: Warnung für gleichzeitiges Bearbeiten */

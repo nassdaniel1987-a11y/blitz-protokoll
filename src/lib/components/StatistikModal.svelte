@@ -57,6 +57,9 @@
 
 			if (fetchError) throw fetchError;
 
+			// Filtere Test-Protokolle aus (die mit "test-" beginnen)
+			const echteProtokolle = (protokolle || []).filter(p => !p.datum.startsWith('test-'));
+
 			// Statistiken berechnen
 			const personenStats = {};
 			const raumStats = {};
@@ -64,7 +67,7 @@
 			let gesamtAnwesenheit = 0;
 			let persoenlicheStats = null;
 
-			protokolle.forEach(protokoll => {
+			echteProtokolle.forEach(protokoll => {
 				gesamtTage++;
 
 				// Anwesenheit

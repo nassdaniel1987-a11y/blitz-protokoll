@@ -221,6 +221,13 @@
 	<!-- View Toggle -->
 	<div class="view-toggle no-print">
 		<button
+			class="toggle-btn test-mode-btn"
+			on:click={() => goto(`/edit?date=test-${currentUsername}`)}
+			title="Öffne dein persönliches Testprotokoll zum Ausprobieren"
+		>
+			🧪 Testmodus
+		</button>
+		<button
 			class="toggle-btn"
 			class:active={viewMode === 'day'}
 			on:click={() => switchView('day')}
@@ -586,6 +593,19 @@
 		background: var(--accent-color);
 		color: white;
 		border-color: var(--accent-color);
+	}
+
+	.toggle-btn.test-mode-btn {
+		background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+		color: white;
+		border-color: #f5576c;
+		font-weight: 600;
+	}
+
+	.toggle-btn.test-mode-btn:hover {
+		background: linear-gradient(135deg, #d87de6 0%, #d4485a 100%);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
 	}
 
 	/* Datumsnavigation */
