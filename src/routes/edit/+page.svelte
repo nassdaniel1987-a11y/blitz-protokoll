@@ -649,7 +649,7 @@
 			<section class="section vorlage-section">
 				<h2>
 					Schnellstart
-					<button class="help-btn" on:click={() => toggleTooltip('schnellstart')} title="Hilfe">?</button>
+					<button type="button" class="help-btn" on:click={() => toggleTooltip('schnellstart')} title="Hilfe">?</button>
 					{#if activeTooltip === 'schnellstart'}
 						<div class="tooltip-box">
 							<strong>Schnellstart-Optionen:</strong>
@@ -702,7 +702,7 @@
 			<section class="section">
 				<h2>
 					Allgemeine Informationen
-					<button class="help-btn" on:click={() => toggleTooltip('anwesenheit')} title="Hilfe">?</button>
+					<button type="button" class="help-btn" on:click={() => toggleTooltip('anwesenheit')} title="Hilfe">?</button>
 					{#if activeTooltip === 'anwesenheit'}
 						<div class="tooltip-box">
 							<strong>Anwesenheit bearbeiten:</strong>
@@ -942,7 +942,7 @@
 			<section class="section">
 				<h2>
 					Belegungsplanung (Übersicht)
-					<button class="help-btn" on:click={() => toggleTooltip('planung')} title="Hilfe">?</button>
+					<button type="button" class="help-btn" on:click={() => toggleTooltip('planung')} title="Hilfe">?</button>
 					{#if activeTooltip === 'planung'}
 						<div class="tooltip-box">
 							<strong>Belegungsplanung:</strong>
