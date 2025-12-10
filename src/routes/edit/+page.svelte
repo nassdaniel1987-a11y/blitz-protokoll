@@ -12,6 +12,7 @@
 	import PersonenAuswahlModal from '$lib/components/PersonenAuswahlModal.svelte';
 	import PersonenKacheln from '$lib/components/PersonenKacheln.svelte';
 	import TeamNachrichtenModal from '$lib/components/TeamNachrichtenModal.svelte';
+	import { saveVorlagen } from '$lib/einstellungenService';
 	// REALTIME: Import für gleichzeitiges Bearbeiten
 	import {
 		registerEditor,
@@ -60,6 +61,10 @@
 	// Nur noch ein Modal State
 	let showAnwesenheitModal = false;
 	let anwesenheitArray = [];
+
+	// Vorlage-Speichern Modal
+	let showSaveTemplateModal = false;
+	let templateName = '';
 	
 	// NEU: Variable für die komplette Personenliste
 	let allePersonen = [];
@@ -499,6 +504,40 @@
 		// Trigger Reaktivität
 		formData = formData;
 	}
+
+	// Als Vorlage speichern
+	async function saveAsTemplate() {
+		if (!templateName.trim()) {
+			toast.show('Bitte gib einen Namen für die Vorlage ein!', 'error');
+			return;
+		}
+
+		// Lade aktuelle Vorlagen
+		const currentVorlagen = await getVorlagen();
+
+		// Erstelle neue Vorlage
+		const newTemplate = {
+			id: `template-${Date.now()}`,
+			name: templateName.trim(),
+			inhalt: JSON.parse(JSON.stringify(formData)) // Deep copy
+		};
+
+		// Füge neue Vorlage hinzu
+		const updatedVorlagen = [...currentVorlagen, newTemplate];
+
+		// Speichere
+		const success = await saveVorlagen(updatedVorlagen);
+
+		if (success) {
+			toast.show(`✓ Vorlage "${templateName}" gespeichert!`, 'success');
+			showSaveTemplateModal = false;
+			templateName = '';
+			// Reload vorlagen
+			vorlagen = await getVorlagen();
+		} else {
+			toast.show('Fehler beim Speichern der Vorlage!', 'error');
+		}
+	}
 </script>
 
 <TeamNachrichtenModal
@@ -506,12 +545,48 @@
 	{currentUsername}
 />
 
-<PersonenAuswahlModal 
+<PersonenAuswahlModal
 	bind:show={showAnwesenheitModal}
 	selectedPersonen={anwesenheitArray}
 	on:select={handleAnwesenheitUpdate}
 	on:close={() => showAnwesenheitModal = false}
 />
+
+<!-- Vorlage Speichern Modal -->
+{#if showSaveTemplateModal}
+	<div class="modal-overlay" on:click={() => showSaveTemplateModal = false}>
+		<div class="modal-content template-modal" on:click|stopPropagation>
+			<div class="modal-header">
+				<h2>📋 Als Vorlage speichern</h2>
+				<button class="close-btn" on:click={() => showSaveTemplateModal = false}>✕</button>
+			</div>
+			<div class="modal-body">
+				<p class="modal-description">
+					Gib der Vorlage einen aussagekräftigen Namen. Sie wird dann beim Erstellen neuer Protokolle verfügbar sein.
+				</p>
+				<div class="form-group">
+					<label for="template-name">Name der Vorlage</label>
+					<input
+						type="text"
+						id="template-name"
+						bind:value={templateName}
+						placeholder="z.B. Typischer Montag, Sommerplan, etc."
+						on:keydown={(e) => e.key === 'Enter' && saveAsTemplate()}
+						autofocus
+					/>
+				</div>
+				<div class="modal-actions">
+					<button type="button" on:click={() => showSaveTemplateModal = false} class="btn-cancel">
+						Abbrechen
+					</button>
+					<button type="button" on:click={saveAsTemplate} class="btn-save">
+						Vorlage speichern
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <div class="edit-container">
 	{#if loading}
@@ -529,6 +604,20 @@
 				{/if}
 			</button>
 		</div>
+
+		<!-- TESTMODUS: Banner wenn Test-Protokoll -->
+		{#if currentDate.startsWith('test-')}
+			<div class="test-mode-banner">
+				<div class="test-icon">🧪</div>
+				<div class="test-content">
+					<div class="test-title">TESTMODUS AKTIV</div>
+					<div class="test-description">
+						Dies ist dein persönliches Übungsprotokoll. Hier kannst du alles ausprobieren!
+						Testprotokolle erscheinen nicht in Statistiken und können beliebig gelöscht werden.
+					</div>
+				</div>
+			</div>
+		{/if}
 
 		<!-- REALTIME: Warnung wenn andere Editoren aktiv sind -->
 		{#if activeEditors.length > 0}
@@ -874,6 +963,14 @@
 				<button type="button" on:click={handleCancel} class="btn-cancel">
 					Abbrechen
 				</button>
+				<button
+					type="button"
+					on:click={() => showSaveTemplateModal = true}
+					class="btn-template"
+					title="Speichere dieses Protokoll als wiederverwendbare Vorlage"
+				>
+					📋 Als Vorlage speichern
+				</button>
 				<button type="submit" disabled={saving} class="btn-save">
 					{saving ? 'Speichert...' : 'Speichern'}
 				</button>
@@ -1146,6 +1243,92 @@
 		background: var(--border-color);
 	}
 
+	.btn-template {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+	}
+
+	.btn-template:hover {
+		background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+	}
+
+	/* Modal Styles */
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: rgba(0, 0, 0, 0.7);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		z-index: 1000;
+	}
+
+	.modal-content.template-modal {
+		background: var(--bg-secondary);
+		border-radius: 12px;
+		width: 90%;
+		max-width: 500px;
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+	}
+
+	.modal-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 20px 24px;
+		border-bottom: 2px solid var(--border-color);
+	}
+
+	.modal-header h2 {
+		margin: 0;
+		color: var(--text-primary);
+		font-size: 1.3rem;
+	}
+
+	.close-btn {
+		background: none;
+		border: none;
+		font-size: 24px;
+		color: var(--text-secondary);
+		cursor: pointer;
+		padding: 0;
+		width: 32px;
+		height: 32px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 4px;
+		transition: all 0.2s;
+	}
+
+	.close-btn:hover {
+		background: var(--border-color);
+		color: var(--text-primary);
+	}
+
+	.modal-body {
+		padding: 24px;
+	}
+
+	.modal-description {
+		color: var(--text-secondary);
+		margin-bottom: 20px;
+		font-size: 0.95rem;
+		line-height: 1.5;
+	}
+
+	.modal-actions {
+		display: flex;
+		gap: 12px;
+		justify-content: flex-end;
+		margin-top: 24px;
+	}
+
 	/* Validierung & Warnungen */
 	.validierung-box {
 		border-left: 4px solid #f39c12;
@@ -1349,6 +1532,70 @@
 		color: var(--text-secondary);
 		font-style: italic;
 		margin-left: 8px;
+	}
+
+	/* TESTMODUS: Banner */
+	.test-mode-banner {
+		display: flex;
+		align-items: center;
+		gap: 20px;
+		padding: 20px;
+		background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+		border: 3px solid #f5576c;
+		border-radius: 12px;
+		margin-bottom: 20px;
+		animation: pulse-test 3s ease-in-out infinite;
+		box-shadow: 0 4px 20px rgba(245, 87, 108, 0.4);
+	}
+
+	:global(.dark-mode) .test-mode-banner {
+		background: linear-gradient(135deg, #d87de6 0%, #d4485a 100%);
+		border-color: #d4485a;
+	}
+
+	@keyframes pulse-test {
+		0%, 100% {
+			opacity: 1;
+			transform: scale(1);
+		}
+		50% {
+			opacity: 0.95;
+			transform: scale(1.005);
+		}
+	}
+
+	.test-icon {
+		font-size: 48px;
+		flex-shrink: 0;
+		animation: rotate-test 4s linear infinite;
+	}
+
+	@keyframes rotate-test {
+		0% { transform: rotate(0deg); }
+		10% { transform: rotate(10deg); }
+		20% { transform: rotate(-10deg); }
+		30% { transform: rotate(10deg); }
+		40% { transform: rotate(0deg); }
+		100% { transform: rotate(0deg); }
+	}
+
+	.test-content {
+		flex: 1;
+		color: white;
+	}
+
+	.test-title {
+		font-size: 1.3rem;
+		font-weight: 700;
+		margin-bottom: 8px;
+		text-transform: uppercase;
+		letter-spacing: 1px;
+	}
+
+	.test-description {
+		font-size: 0.95rem;
+		line-height: 1.5;
+		opacity: 0.95;
 	}
 
 	/* REALTIME: Warnung für gleichzeitiges Bearbeiten */
