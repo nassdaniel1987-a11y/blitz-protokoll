@@ -2,6 +2,7 @@
 	import { supabase } from '$lib/supabaseClient';
 	import { onMount } from 'svelte';
 	import { darkMode } from '$lib/darkModeStore';
+	import { isCurrentUserAdmin } from '$lib/userManagementService';
 
 	export let show = false;
 
@@ -12,6 +13,7 @@
 	let error = null;
 	let currentUser = null;
 	let assignedPersonName = null; // Der zugeordnete Name des aktuellen Users
+	let isAdmin = false; // Ist der aktuelle User ein Admin?
 	let showAllPersonen = false; // Toggle für alle Personen anzeigen
 	let expandedPersonen = {}; // Welche Personen sind aufgeklappt
 	let expandedRaeume = {}; // Welche Räume sind aufgeklappt
@@ -30,6 +32,7 @@
 		if (data.session) {
 			currentUser = data.session.user;
 			assignedPersonName = currentUser.user_metadata?.assigned_person_name || null;
+			isAdmin = await isCurrentUserAdmin();
 		}
 	});
 
@@ -275,9 +278,10 @@
 							</div>
 						</section>
 
-						<!-- Personen-Statistiken -->
-						<section class="stats-section">
-							<h3>👥 Tage pro Person (Detailliert)</h3>
+						<!-- Personen-Statistiken (nur für Admins) -->
+						{#if isAdmin}
+							<section class="stats-section">
+								<h3>👥 Tage pro Person (Detailliert)</h3>
 							<div class="chart-section">
 								<div class="bar-chart">
 									{#each (showAllPersonen ? statistiken.personenStats : statistiken.personenStats.slice(0, 10)) as person}
@@ -325,6 +329,7 @@
 								{/if}
 							</div>
 						</section>
+					{/if}
 
 						<!-- Raum-Statistiken -->
 						<section class="stats-section">
