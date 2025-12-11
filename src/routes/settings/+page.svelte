@@ -24,6 +24,14 @@
 	let newUserPassword = '';
 	let creatingUser = false;
 
+	// Collapse/Expand States für Bereiche
+	let expandedSections = {
+		benutzerverwaltung: true,
+		personen: true,
+		raeume: true,
+		vorlagen: true
+	};
+
 	onMount(async () => {
 		// Auth-Check
 		const { data } = await supabase.auth.getSession();
@@ -218,6 +226,11 @@
 	function getUsernameFromEmail(email) {
 		return email.split('@')[0];
 	}
+
+	function toggleSection(sectionName) {
+		expandedSections[sectionName] = !expandedSections[sectionName];
+		expandedSections = { ...expandedSections }; // Trigger reactivity
+	}
 </script>
 
 <div class="settings-container">
@@ -234,16 +247,21 @@
 		<!-- USER-VERWALTUNG (nur für Admins) -->
 		{#if isAdmin}
 			<section class="section admin-section">
-				<h2>🔐 Benutzerverwaltung</h2>
-				<p class="description">
-					Erstelle und verwalte Benutzer-Accounts. Neue User müssen beim ersten Login ihr Passwort ändern.
-				</p>
+				<h2 class="section-header clickable" on:click={() => toggleSection('benutzerverwaltung')}>
+					<span class="expand-icon">{expandedSections.benutzerverwaltung ? '▼' : '▶'}</span>
+					🔐 Benutzerverwaltung
+				</h2>
 
-				<button on:click={() => showCreateUserModal = true} class="create-user-btn">
-					+ Neuer Benutzer
-				</button>
+				{#if expandedSections.benutzerverwaltung}
+					<p class="description">
+						Erstelle und verwalte Benutzer-Accounts. Neue User müssen beim ersten Login ihr Passwort ändern.
+					</p>
 
-				<div class="user-list">
+					<button on:click={() => showCreateUserModal = true} class="create-user-btn">
+						+ Neuer Benutzer
+					</button>
+
+					<div class="user-list">
 					{#each users as user}
 						<div class="user-item">
 							<div class="user-info">
@@ -302,11 +320,17 @@
 						</div>
 					{/each}
 				</div>
+			{/if}
 			</section>
 		{/if}
 
 		<section class="section">
-			<h2>Personenliste</h2>
+			<h2 class="section-header clickable" on:click={() => toggleSection('personen')}>
+				<span class="expand-icon">{expandedSections.personen ? '▼' : '▶'}</span>
+				Personenliste
+			</h2>
+
+			{#if expandedSections.personen}
 			<p class="description">
 				Verwalte die Liste der Kolleg*innen für die Anwesenheitsauswahl.
 			</p>
@@ -328,8 +352,8 @@
 			</div>
 
 			<div class="add-person">
-				<input 
-					type="text" 
+				<input
+					type="text"
 					bind:value={neuerName}
 					placeholder="Neuer Name..."
 					on:keydown={(e) => e.key === 'Enter' && addPerson()}
@@ -338,11 +362,17 @@
 					+ Hinzufügen
 				</button>
 			</div>
+			{/if}
 
 		</section>
 
 		<section class="section">
-			<h2>Raumliste</h2>
+			<h2 class="section-header clickable" on:click={() => toggleSection('raeume')}>
+				<span class="expand-icon">{expandedSections.raeume ? '▼' : '▶'}</span>
+				Raumliste
+			</h2>
+
+			{#if expandedSections.raeume}
 			<p class="description">
 				Verwalte die Liste der Räume für die Planungsmatrix.
 			</p>
@@ -378,10 +408,16 @@
 					+ Hinzufügen
 				</button>
 			</div>
+			{/if}
 		</section>
 
 		<section class="section">
-			<h2>Tagesvorlagen</h2>
+			<h2 class="section-header clickable" on:click={() => toggleSection('vorlagen')}>
+				<span class="expand-icon">{expandedSections.vorlagen ? '▼' : '▶'}</span>
+				Tagesvorlagen
+			</h2>
+
+			{#if expandedSections.vorlagen}
 			<p class="description">
 				Erstelle Vorlagen für wiederkehrende Tagesstrukturen (z.B. "Montag", "Freitag Kurz").
 				Diese Vorlagen können beim Erstellen neuer Protokolle als Ausgangspunkt verwendet werden.
@@ -422,6 +458,7 @@
 					+ Neue Vorlage erstellen
 				</button>
 			</div>
+			{/if}
 		</section>
 
 		<div class="save-container">
@@ -524,6 +561,32 @@
 		margin: 0;
 		color: var(--text-primary);
 		font-size: 1.8rem;
+	}
+
+	/* Collapsible Section Headers */
+	.section-header {
+		cursor: pointer;
+		user-select: none;
+		transition: color 0.2s;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.section-header:hover {
+		color: var(--color-primary);
+	}
+
+	.section-header.clickable {
+		cursor: pointer;
+	}
+
+	.expand-icon {
+		display: inline-block;
+		font-size: 0.9em;
+		transition: transform 0.2s;
+		width: 20px;
+		text-align: center;
 	}
 
 	.back-btn {

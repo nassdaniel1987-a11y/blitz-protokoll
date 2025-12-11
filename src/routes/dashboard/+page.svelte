@@ -1226,55 +1226,49 @@
 	}
 
 	.help-btn-header {
-		background: var(--color-primary);
-		color: white;
-		border: none;
-		border-radius: 50%;
-		width: 24px;
-		height: 24px;
-		font-size: 14px;
-		font-weight: bold;
-		cursor: pointer;
-		display: flex;
+		display: inline-flex;
 		align-items: center;
 		justify-content: center;
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		background: var(--accent-color);
+		color: white;
+		border: none;
+		font-size: 14px;
+		font-weight: 700;
+		cursor: pointer;
 		transition: all 0.2s;
 		flex-shrink: 0;
 	}
 
 	.help-btn-header:hover {
+		background: var(--accent-hover);
 		transform: scale(1.1);
-		background: var(--color-primary-dark);
 	}
 
 	.tooltip-box-header {
 		position: absolute;
 		top: 100%;
 		left: 0;
-		margin-top: 8px;
-		background: white;
-		border: 2px solid var(--color-primary);
+		margin-top: 10px;
+		padding: 12px 16px;
+		background: var(--bg-primary);
+		border: 2px solid var(--accent-color);
 		border-radius: 8px;
-		padding: 12px;
-		min-width: 250px;
-		max-width: 300px;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 		z-index: 1000;
-		font-size: 14px;
-		line-height: 1.4;
-		animation: tooltipFadeIn 0.2s ease-out;
-	}
-
-	:global(body.dark-mode) .tooltip-box-header {
-		background: var(--bg-secondary);
+		max-width: 400px;
+		font-size: 0.9rem;
+		line-height: 1.5;
 		color: var(--text-primary);
-		border-color: var(--color-primary);
+		animation: tooltipFadeIn 0.2s ease;
 	}
 
 	@keyframes tooltipFadeIn {
 		from {
 			opacity: 0;
-			transform: translateY(-8px);
+			transform: translateY(-5px);
 		}
 		to {
 			opacity: 1;
@@ -1290,10 +1284,9 @@
 		}
 
 		.tooltip-box-header {
-			min-width: 200px;
-			max-width: 250px;
-			font-size: 13px;
-			padding: 10px;
+			max-width: 300px;
+			font-size: 0.85rem;
+			padding: 10px 12px;
 		}
 	}
 
