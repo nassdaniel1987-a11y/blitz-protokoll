@@ -22,6 +22,7 @@
 	let messageCount = 0;
 	let realtimeChannel = null; // Realtime für Badge-Counter
 	let showOnboardingModal = false; // Onboarding für neue Nutzer
+	let activeTooltip = null; // Für Hilfe-Tooltips
 
 	// Raumliste - wird dynamisch geladen
 	let raeume = [];
@@ -200,6 +201,14 @@
 		closeOnboarding();
 		goto(`/edit?date=test-${currentUsername}`);
 	}
+
+	function toggleTooltip(tooltipId) {
+		if (activeTooltip === tooltipId) {
+			activeTooltip = null;
+		} else {
+			activeTooltip = tooltipId;
+		}
+	}
 </script>
 
 <TeamNachrichtenModal
@@ -273,17 +282,35 @@
 	<header class="header no-print">
 		<h1>Blitz-Protokoll</h1>
 		<div class="header-actions">
-			<button on:click={openNachrichtenModal} class="nachrichten-btn" title="Team-Notizen">
-				<span class="btn-icon">📝</span>
-				<span class="btn-text">Team-Notizen</span>
-				{#if messageCount > 0}
-					<span class="badge">{messageCount}</span>
+			<div class="btn-with-help">
+				<button on:click={openNachrichtenModal} class="nachrichten-btn" title="Team-Notizen">
+					<span class="btn-icon">📝</span>
+					<span class="btn-text">Team-Notizen</span>
+					{#if messageCount > 0}
+						<span class="badge">{messageCount}</span>
+					{/if}
+				</button>
+				<button type="button" class="help-btn-header" on:click|stopPropagation={() => toggleTooltip('notizen')} title="Hilfe">?</button>
+				{#if activeTooltip === 'notizen'}
+					<div class="tooltip-box-header">
+						<strong>Team-Notizen:</strong>
+						<br>Hier kannst du Nachrichten mit deinem Team teilen. Ideal für Ankündigungen, Erinnerungen oder wichtige Informationen zum Tagesablauf.
+					</div>
 				{/if}
-			</button>
-			<button on:click={() => showStatistikModal = true} class="statistik-btn" title="Statistiken">
-				<span class="btn-icon">📊</span>
-				<span class="btn-text">Statistiken</span>
-			</button>
+			</div>
+			<div class="btn-with-help">
+				<button on:click={() => showStatistikModal = true} class="statistik-btn" title="Statistiken">
+					<span class="btn-icon">📊</span>
+					<span class="btn-text">Statistiken</span>
+				</button>
+				<button type="button" class="help-btn-header" on:click|stopPropagation={() => toggleTooltip('statistik')} title="Hilfe">?</button>
+				{#if activeTooltip === 'statistik'}
+					<div class="tooltip-box-header">
+						<strong>Statistiken:</strong>
+						<br>Analysiere Anwesenheit und Raumnutzung über einen beliebigen Zeitraum. Du siehst deine persönlichen Statistiken und die Belegung der Räume.
+					</div>
+				{/if}
+			</div>
 			<button on:click={() => goto('/settings')} class="settings-btn" title="Einstellungen">
 				<span class="btn-icon">⚙️</span>
 				<span class="btn-text">Einstellungen</span>
@@ -1188,6 +1215,86 @@
 	.btn-test:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 6px 16px rgba(245, 87, 108, 0.4);
+	}
+
+	/* Header Help Buttons */
+	.btn-with-help {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.help-btn-header {
+		background: var(--color-primary);
+		color: white;
+		border: none;
+		border-radius: 50%;
+		width: 24px;
+		height: 24px;
+		font-size: 14px;
+		font-weight: bold;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s;
+		flex-shrink: 0;
+	}
+
+	.help-btn-header:hover {
+		transform: scale(1.1);
+		background: var(--color-primary-dark);
+	}
+
+	.tooltip-box-header {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		margin-top: 8px;
+		background: white;
+		border: 2px solid var(--color-primary);
+		border-radius: 8px;
+		padding: 12px;
+		min-width: 250px;
+		max-width: 300px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		z-index: 1000;
+		font-size: 14px;
+		line-height: 1.4;
+		animation: tooltipFadeIn 0.2s ease-out;
+	}
+
+	:global(body.dark-mode) .tooltip-box-header {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+		border-color: var(--color-primary);
+	}
+
+	@keyframes tooltipFadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(-8px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@media (max-width: 768px) {
+		.help-btn-header {
+			width: 20px;
+			height: 20px;
+			font-size: 12px;
+		}
+
+		.tooltip-box-header {
+			min-width: 200px;
+			max-width: 250px;
+			font-size: 13px;
+			padding: 10px;
+		}
 	}
 
 	@media print {
