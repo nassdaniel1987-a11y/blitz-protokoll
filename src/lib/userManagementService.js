@@ -137,13 +137,13 @@ export async function deleteUser(userId) {
 			return { success: false, error: 'Nicht authentifiziert' };
 		}
 
-		const response = await fetch(`${supabaseUrl}/functions/v1/delete-user`, {
-			method: 'POST',
+		const response = await fetch(`${supabaseUrl}/functions/v1/bright-api`, {
+			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json',
 				'Authorization': `Bearer ${token}`
 			},
-			body: JSON.stringify({ userId })
+			body: JSON.stringify({ action: 'delete-user', userId })
 		});
 
 		const result = await response.json();
