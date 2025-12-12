@@ -95,8 +95,11 @@
 				return;
 			}
 		} else {
-			// Neue Vorlage
+			// Neue Vorlage - alle Personen standardmäßig anwesend
 			formData = createEmptyProtokoll();
+			anwesenheitArray = [...allePersonen];
+			formData.anwesenheit = arrayToString(anwesenheitArray);
+			formData.abwesend = '';
 		}
 		loading = false;
 	});
