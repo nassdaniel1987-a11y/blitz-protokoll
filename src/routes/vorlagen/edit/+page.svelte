@@ -29,7 +29,49 @@
 	let raeume = [];
 	let raumLabels = {};
 
+	// PAINT MODE: Ausgewählte Person für schnelles Zuweisen
+	let selectedPerson = null;
+	let eraserMode = false; // Radierer-Modus
+
+	// PAINT MODE: Zuordnungsstatus für farbliche Kennzeichnung
+	let zuordnungStatus = {};
+	let kachelKlassen = {};
+
 	const zeitslots = ['12:25-13:10', '13:15-14:00', '14:00-14:30'];
+
+	// Berechne für alle Personen die Zuordnungen - reaktiv!
+	$: {
+		zuordnungStatus = {};
+		anwesenheitArray.forEach(person => {
+			let zugeordneteSlots = 0;
+			zeitslots.forEach(slot => {
+				raeume.forEach(raum => {
+					const inhalt = formData.planung[slot]?.[raum] || '';
+					const personen = inhalt.split(',').map(p => p.trim()).filter(p => p);
+					if (personen.includes(person)) {
+						zugeordneteSlots++;
+					}
+				});
+			});
+			zuordnungStatus[person] = zugeordneteSlots;
+		});
+	}
+
+	// Berechne Farbklassen reaktiv basierend auf zuordnungStatus
+	$: {
+		kachelKlassen = {};
+		const maxSlots = zeitslots.length;
+		anwesenheitArray.forEach(person => {
+			const status = zuordnungStatus[person] || 0;
+			if (status === 0) {
+				kachelKlassen[person] = 'nicht-zugeordnet';
+			} else if (status >= maxSlots) {
+				kachelKlassen[person] = 'vollstaendig';
+			} else {
+				kachelKlassen[person] = 'teilweise';
+			}
+		});
+	}
 
 	function createEmptyProtokoll() {
 		const planung = {};
@@ -169,6 +211,51 @@
 		goto('/settings');
 	}
 
+	// PAINT MODE: Person auswählen
+	function selectPerson(person) {
+		eraserMode = false; // Radierer deaktivieren
+		if (selectedPerson === person) {
+			selectedPerson = null; // Deselektieren wenn nochmal geklickt
+		} else {
+			selectedPerson = person;
+		}
+	}
+
+	// PAINT MODE: Radierer aktivieren/deaktivieren
+	function toggleEraser() {
+		selectedPerson = null; // Person-Auswahl deaktivieren
+		eraserMode = !eraserMode;
+	}
+
+	// PAINT MODE: Person in Tabellenfeld hinzufügen/entfernen (Toggle) ODER löschen mit Radierer
+	function togglePersonInFeld(slot, raum) {
+		// Radierer-Modus: Komplette Zelle löschen
+		if (eraserMode) {
+			formData.planung[slot][raum] = '';
+			formData = formData;
+			return;
+		}
+
+		// Normale Person-Zuweisung
+		if (!selectedPerson) return; // Keine Person ausgewählt
+
+		const currentValue = formData.planung[slot][raum] || '';
+		const personen = currentValue.split(',').map(p => p.trim()).filter(p => p);
+
+		if (personen.includes(selectedPerson)) {
+			// Person entfernen
+			const newPersonen = personen.filter(p => p !== selectedPerson);
+			formData.planung[slot][raum] = newPersonen.join(', ');
+		} else {
+			// Person hinzufügen
+			personen.push(selectedPerson);
+			formData.planung[slot][raum] = personen.join(', ');
+		}
+
+		// Trigger Reaktivität
+		formData = formData;
+	}
+
 	function autoResize(event) {
 		const textarea = event.target;
 		textarea.style.height = 'auto';
@@ -303,6 +390,55 @@
 						on:update={handlePlanungUpdate}
 					/>
 				</section>
+
+				<!-- PAINT MODE: Schnellzuweisung -->
+				<section class="section paint-mode-section">
+					<h2>✏️ Schnellzuweisung</h2>
+					<p class="paint-mode-hint">
+						Klicke auf eine Person oder den Radierer, dann auf Felder in der Tabelle.
+					</p>
+					{#if selectedPerson}
+						<p class="selected-person-indicator">
+							<strong class="selected-person-name">Ausgewählt: {selectedPerson}</strong>
+						</p>
+					{:else if eraserMode}
+						<p class="selected-person-indicator">
+							<strong class="selected-person-name eraser-active">🗑️ Radierer aktiv</strong>
+						</p>
+					{/if}
+
+					<div class="paint-mode-personen">
+						{#each anwesenheitArray as person}
+							<button
+								type="button"
+								class="paint-mode-person {kachelKlassen[person] || 'nicht-zugeordnet'}"
+								class:active={selectedPerson === person}
+								on:click={() => selectPerson(person)}
+							>
+								<span class="person-name-paint">{person}</span>
+								<span class="status-badge-paint">{zuordnungStatus[person] || 0}/{zeitslots.length}</span>
+							</button>
+						{/each}
+
+						<!-- Radierer-Button -->
+						<button
+							type="button"
+							class="paint-mode-person eraser-btn"
+							class:active={eraserMode}
+							on:click={toggleEraser}
+							title="Radierer: Klicken um Zellen zu leeren"
+						>
+							<span class="person-name-paint">🗑️</span>
+							<span class="status-badge-paint">Radierer</span>
+						</button>
+					</div>
+
+					<div class="paint-mode-legende">
+						<span class="legende-item"><span class="dot nicht-zugeordnet"></span> Nicht zugeordnet</span>
+						<span class="legende-item"><span class="dot teilweise"></span> Teilweise zugeordnet</span>
+						<span class="legende-item"><span class="dot vollstaendig"></span> Vollständig zugeordnet</span>
+					</div>
+				</section>
 			{/if}
 
 			<section class="section">
@@ -324,14 +460,26 @@
 									<tr>
 										<td class="raum-label">{raumLabels[raum]}</td>
 										{#each zeitslots as slot}
-											<td>
-												<textarea
-													bind:value={formData.planung[slot][raum]}
-													placeholder="..."
-													class="matrix-input"
-													rows="1"
-													on:input={autoResize}
-												></textarea>
+											<td
+												class="matrix-cell"
+												class:paint-mode-active={selectedPerson || eraserMode}
+												on:click={() => togglePersonInFeld(slot, raum)}
+											>
+												{#if selectedPerson || eraserMode}
+													<!-- Paint Mode: Zeige nur Text, ganze Zelle ist klickbar -->
+													<div class="matrix-text">
+														{formData.planung[slot][raum] || '...'}
+													</div>
+												{:else}
+													<!-- Normaler Modus: Textarea zum Eingeben -->
+													<textarea
+														bind:value={formData.planung[slot][raum]}
+														placeholder="..."
+														class="matrix-input"
+														rows="1"
+														on:input={autoResize}
+													></textarea>
+												{/if}
 											</td>
 										{/each}
 									</tr>
@@ -559,6 +707,209 @@
 
 	.btn-cancel:hover {
 		background: var(--border-color);
+	}
+
+	/* PAINT MODE Styles */
+	.paint-mode-section {
+		background: var(--bg-secondary);
+		border: 2px dashed var(--accent-color);
+	}
+
+	.paint-mode-hint {
+		color: var(--text-secondary);
+		font-size: 0.9rem;
+		margin: 0.5rem 0 1rem 0;
+	}
+
+	.selected-person-indicator {
+		margin: 0.5rem 0;
+		padding: 0.5rem;
+		background: var(--accent-color);
+		color: white;
+		border-radius: 6px;
+		text-align: center;
+	}
+
+	.selected-person-name {
+		font-size: 1rem;
+	}
+
+	.selected-person-name.eraser-active {
+		color: #dc3545;
+	}
+
+	.paint-mode-personen {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+		gap: 1rem;
+		margin: 1.5rem 0;
+	}
+
+	.paint-mode-person {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 1rem;
+		border: 2px solid transparent;
+		border-radius: 8px;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		cursor: pointer;
+		transition: all 0.2s ease;
+		min-height: 80px;
+	}
+
+	:global(.dark-mode) .paint-mode-person {
+		background: #2d2d2d;
+	}
+
+	.person-name-paint {
+		font-weight: 600;
+		margin-bottom: 0.5rem;
+	}
+
+	.status-badge-paint {
+		font-size: 0.85rem;
+		padding: 0.25rem 0.6rem;
+		border-radius: 12px;
+		background: var(--border-color);
+		font-weight: 500;
+		color: var(--text-primary);
+	}
+
+	/* Farbcodierung für Paint Mode Buttons */
+	.paint-mode-person.nicht-zugeordnet {
+		border-color: #3498db;
+	}
+
+	.paint-mode-person.nicht-zugeordnet .status-badge-paint {
+		background: #3498db;
+		color: white;
+	}
+
+	.paint-mode-person.teilweise {
+		border-color: #f39c12;
+	}
+
+	.paint-mode-person.teilweise .status-badge-paint {
+		background: #f39c12;
+		color: white;
+	}
+
+	.paint-mode-person.vollstaendig {
+		border-color: #27ae60;
+	}
+
+	.paint-mode-person.vollstaendig .status-badge-paint {
+		background: #27ae60;
+		color: white;
+	}
+
+	.paint-mode-person:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px var(--shadow);
+	}
+
+	:global(.dark-mode) .paint-mode-person:hover {
+		box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+	}
+
+	.paint-mode-person.active {
+		transform: scale(1.05);
+		box-shadow: 0 0 0 3px var(--accent-color);
+		background: var(--accent-color);
+		color: white;
+		border-color: var(--accent-color);
+	}
+
+	.paint-mode-person.active .person-name-paint,
+	.paint-mode-person.active .status-badge-paint {
+		color: white;
+	}
+
+	.paint-mode-person.active .status-badge-paint {
+		background: rgba(255, 255, 255, 0.3);
+	}
+
+	/* Radierer-Button */
+	.paint-mode-person.eraser-btn {
+		border-color: #dc3545;
+	}
+
+	.paint-mode-person.eraser-btn .status-badge-paint {
+		background: #dc3545;
+		color: white;
+	}
+
+	.paint-mode-person.eraser-btn.active {
+		background: #dc3545;
+		border-color: #dc3545;
+	}
+
+	.paint-mode-person.eraser-btn.active .status-badge-paint {
+		background: rgba(255, 255, 255, 0.3);
+	}
+
+	.paint-mode-legende {
+		display: flex;
+		gap: 1.5rem;
+		flex-wrap: wrap;
+		font-size: 0.9rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--border-color);
+		color: var(--text-secondary);
+	}
+
+	.paint-mode-legende .legende-item {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.paint-mode-legende .dot {
+		width: 16px;
+		height: 16px;
+		border-radius: 50%;
+		display: inline-block;
+	}
+
+	.paint-mode-legende .dot.nicht-zugeordnet {
+		background: #3498db;
+	}
+
+	.paint-mode-legende .dot.teilweise {
+		background: #f39c12;
+	}
+
+	.paint-mode-legende .dot.vollstaendig {
+		background: #27ae60;
+	}
+
+	/* Matrix-Zellen im Paint Mode */
+	.matrix-cell {
+		cursor: default;
+	}
+
+	.matrix-cell.paint-mode-active {
+		cursor: pointer;
+	}
+
+	.matrix-cell.paint-mode-active:hover {
+		background: rgba(52, 152, 219, 0.1);
+	}
+
+	:global(.dark-mode) .matrix-cell.paint-mode-active:hover {
+		background: rgba(52, 152, 219, 0.2);
+	}
+
+	.matrix-text {
+		padding: 8px;
+		min-height: 36px;
+		line-height: 1.4;
+		font-size: 14px;
+		color: var(--text-primary);
+		white-space: pre-wrap;
 	}
 
 	@media (max-width: 768px) {
