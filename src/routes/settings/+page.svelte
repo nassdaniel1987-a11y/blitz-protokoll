@@ -857,14 +857,9 @@
 		align-items: flex-start;
 		gap: 16px;
 		padding: 16px;
-		background: white;
-		border: 2px solid #e0e0e0;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-color);
 		border-radius: 8px;
-	}
-
-	:global(.dark-mode) .user-item {
-		background: #2d2d2d;
-		border-color: #444;
 	}
 
 	.user-info {
