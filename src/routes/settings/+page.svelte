@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { getPersonen, savePersonen, getRaeume, saveRaeume, getVorlagen, saveVorlagen } from '$lib/einstellungenService';
-	import { isCurrentUserAdmin, getAllUsers, createUser, removeMustChangePassword, setUserAdminStatus, assignPersonToUser } from '$lib/userManagementService';
+	import { isCurrentUserAdmin, getAllUsers, createUser, removeMustChangePassword, setUserAdminStatus, assignPersonToUser, deleteUser } from '$lib/userManagementService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
 
@@ -217,6 +217,23 @@
 		}
 	}
 
+	async function handleDeleteUser(user) {
+		const username = getUsernameFromEmail(user.email);
+
+		if (!confirm(`Möchtest du den Benutzer "${username}" wirklich löschen?\n\nDiese Aktion kann nicht rückgängig gemacht werden!`)) {
+			return;
+		}
+
+		const result = await deleteUser(user.id);
+
+		if (result.success) {
+			toast.show(`Benutzer "${username}" erfolgreich gelöscht!`, 'success');
+			users = await getAllUsers();
+		} else {
+			toast.show(`Fehler beim Löschen: ${result.error}`, 'error');
+		}
+	}
+
 	function formatTimestamp(timestamp) {
 		if (!timestamp) return 'Nie';
 		const date = new Date(timestamp);
@@ -315,6 +332,13 @@
 									title={user.is_admin ? 'Admin-Rechte entziehen' : 'Zum Admin machen'}
 								>
 									{user.is_admin ? '👤 Admin entfernen' : '👑 Zum Admin machen'}
+								</button>
+								<button
+									on:click={() => handleDeleteUser(user)}
+									class="action-btn delete-btn"
+									title="Benutzer löschen"
+								>
+									🗑️ Benutzer löschen
 								</button>
 							</div>
 						</div>
@@ -965,6 +989,29 @@
 		background: var(--accent-color);
 		color: white;
 		border-color: var(--accent-color);
+	}
+
+	.delete-btn {
+		background: #fff5f5;
+		color: #dc3545;
+		border-color: #dc3545;
+	}
+
+	.delete-btn:hover {
+		background: #dc3545;
+		color: white;
+		border-color: #dc3545;
+	}
+
+	:global(.dark-mode) .delete-btn {
+		background: #2d1f1f;
+		color: #ff6b6b;
+		border-color: #dc3545;
+	}
+
+	:global(.dark-mode) .delete-btn:hover {
+		background: #dc3545;
+		color: white;
 	}
 
 	/* Modal Styles */
