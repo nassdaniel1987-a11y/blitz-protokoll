@@ -118,3 +118,39 @@ export async function assignPersonToUser(userId, currentMetadata, personName) {
 	const newMetadata = { ...currentMetadata, assigned_person_name: personName };
 	return await updateUserMetadata(userId, newMetadata);
 }
+
+/**
+ * Löscht einen User (nur für Admins)
+ * @param {string} userId - User-ID des zu löschenden Users
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function deleteUser(userId) {
+	try {
+		// Supabase URL ermitteln
+		const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || supabase.supabaseUrl;
+
+		// Edge Function aufrufen
+		const { data: sessionData } = await supabase.auth.getSession();
+		const token = sessionData.session?.access_token;
+
+		if (!token) {
+			return { success: false, error: 'Nicht authentifiziert' };
+		}
+
+		const response = await fetch(`${supabaseUrl}/functions/v1/delete-user`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${token}`
+			},
+			body: JSON.stringify({ userId })
+		});
+
+		const result = await response.json();
+		return result;
+
+	} catch (error) {
+		console.error('Fehler beim Löschen des Users:', error);
+		return { success: false, error: error.message };
+	}
+}
