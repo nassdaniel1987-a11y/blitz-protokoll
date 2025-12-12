@@ -94,11 +94,13 @@
 	let showDetailedKacheln = false;
 
 	// Berechne für alle Personen die Zuordnungen - reaktiv!
+	// Hinweis: Der erste Slot (11:40-12:25) wird nicht mitgezählt, da er selten vergeben wird
 	$: {
 		zuordnungStatus = {};
 		anwesenheitArray.forEach(person => {
 			let zugeordneteSlots = 0;
-			zeitslots.forEach(slot => {
+			// Überspringe den ersten Slot (Index 0: 11:40-12:25)
+			zeitslots.slice(1).forEach(slot => {
 				raeume.forEach(raum => {
 					const inhalt = formData.planung[slot]?.[raum] || '';
 					const personen = inhalt.split(',').map(p => p.trim()).filter(p => p);
@@ -114,7 +116,7 @@
 	// Berechne Farbklassen reaktiv basierend auf zuordnungStatus
 	$: {
 		kachelKlassen = {};
-		const maxSlots = zeitslots.length;
+		const maxSlots = 3; // Nur 3 Slots werden gezählt (ohne 11:40-12:25)
 		anwesenheitArray.forEach(person => {
 			const status = zuordnungStatus[person] || 0;
 			if (status === 0) {
@@ -900,7 +902,7 @@
 								on:click={() => selectPerson(person)}
 							>
 								<span class="person-name-paint">{person}</span>
-								<span class="status-badge-paint">{zuordnungStatus[person] || 0}/{zeitslots.length}</span>
+								<span class="status-badge-paint">{zuordnungStatus[person] || 0}/3</span>
 							</button>
 						{/each}
 
