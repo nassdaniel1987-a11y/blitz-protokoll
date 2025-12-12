@@ -4,7 +4,7 @@
 	export let wochenDaten = []; // Array of { datum, protokoll }
 	export let raeume = [];
 
-	const zeitslots = ['12:25-13:10', '13:15-14:00', '14:00-14:30'];
+	const zeitslots = ['11:40-12:25', '12:25-13:10', '13:10-14:00', '14:00-14:30'];
 	const wochentage = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
 
 	function formatDatum(datum) {

@@ -37,7 +37,7 @@
 	let zuordnungStatus = {};
 	let kachelKlassen = {};
 
-	const zeitslots = ['12:25-13:10', '13:15-14:00', '14:00-14:30'];
+	const zeitslots = ['11:40-12:25', '12:25-13:10', '13:10-14:00', '14:00-14:30'];
 
 	// Berechne für alle Personen die Zuordnungen - reaktiv!
 	$: {
