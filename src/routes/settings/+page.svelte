@@ -829,16 +829,6 @@
 	/* iPad-Optimierung */
 	/* USER-MANAGEMENT Styles */
 
-	.admin-section {
-		background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-		border-left: 4px solid #2196f3;
-	}
-
-	:global(.dark-mode) .admin-section {
-		background: linear-gradient(135deg, #1a2a3a 0%, #2a3a4a 100%);
-		border-left-color: #64b5f6;
-	}
-
 	.create-user-btn {
 		padding: 12px 24px;
 		background: #2196f3;
