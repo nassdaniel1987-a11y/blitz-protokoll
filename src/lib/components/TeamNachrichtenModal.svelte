@@ -136,18 +136,7 @@
 
 	function formatDate(dateString) {
 		const date = new Date(dateString);
-		const now = new Date();
-		const diffMs = now - date;
-		const diffMins = Math.floor(diffMs / 60000);
-		const diffHours = Math.floor(diffMs / 3600000);
-		const diffDays = Math.floor(diffMs / 86400000);
-
-		if (diffMins < 1) return 'Gerade eben';
-		if (diffMins < 60) return `vor ${diffMins} Min`;
-		if (diffHours < 24) return `vor ${diffHours} Std`;
-		if (diffDays < 7) return `vor ${diffDays} Tag${diffDays > 1 ? 'en' : ''}`;
-
-		return date.toLocaleDateString('de-DE', {
+		return date.toLocaleString('de-DE', {
 			day: '2-digit',
 			month: '2-digit',
 			year: 'numeric',
