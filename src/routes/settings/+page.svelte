@@ -26,10 +26,10 @@
 
 	// Collapse/Expand States für Bereiche
 	let expandedSections = {
-		benutzerverwaltung: true,
-		personen: true,
-		raeume: true,
-		vorlagen: true
+		benutzerverwaltung: false,
+		personen: false,
+		raeume: false,
+		vorlagen: false
 	};
 
 	onMount(async () => {
