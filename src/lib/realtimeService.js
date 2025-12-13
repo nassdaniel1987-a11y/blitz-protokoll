@@ -152,3 +152,125 @@ export function subscribeToActiveEditors(date, onEditorsChange) {
 
 	return subscription;
 }
+
+// ========================================
+// FIELD-LEVEL TRACKING (für Live-Editing)
+// ========================================
+
+/**
+ * Registriert einen Editor für ein bestimmtes Feld (Slot+Raum)
+ * @param {string} date - Datum im Format YYYY-MM-DD
+ * @param {string} fieldKey - Feld-Identifier (z.B. "12:25-13:10_Raum 1")
+ * @param {string} username - Benutzername
+ * @returns {Promise<boolean>}
+ */
+export async function registerFieldEditor(date, fieldKey, username) {
+	const { error } = await supabase
+		.from('active_field_editors')
+		.upsert({
+			protokoll_date: date,
+			field_key: fieldKey,
+			username: username,
+			last_updated: new Date().toISOString()
+		}, {
+			onConflict: 'protokoll_date,field_key'
+		});
+
+	if (error) {
+		console.error('Fehler beim Registrieren des Field-Editors:', error);
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Meldet einen Editor von einem Feld ab
+ * @param {string} date - Datum im Format YYYY-MM-DD
+ * @param {string} fieldKey - Feld-Identifier
+ * @param {string} username - Benutzername (optional, zur Sicherheit)
+ * @returns {Promise<boolean>}
+ */
+export async function unregisterFieldEditor(date, fieldKey, username = null) {
+	let query = supabase
+		.from('active_field_editors')
+		.delete()
+		.eq('protokoll_date', date)
+		.eq('field_key', fieldKey);
+
+	// Nur eigene Felder freigeben
+	if (username) {
+		query = query.eq('username', username);
+	}
+
+	const { error } = await query;
+
+	if (error) {
+		console.error('Fehler beim Abmelden des Field-Editors:', error);
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Lädt alle aktiven Feld-Editoren für ein bestimmtes Datum
+ * @param {string} date - Datum im Format YYYY-MM-DD
+ * @returns {Promise<Object>} Map: fieldKey -> username
+ */
+export async function getActiveFieldEditors(date) {
+	// Alte Einträge löschen (älter als 10 Sekunden)
+	const cutoff = new Date(Date.now() - 10000).toISOString();
+	await supabase
+		.from('active_field_editors')
+		.delete()
+		.eq('protokoll_date', date)
+		.lt('last_updated', cutoff);
+
+	const { data, error } = await supabase
+		.from('active_field_editors')
+		.select('*')
+		.eq('protokoll_date', date);
+
+	if (error) {
+		console.error('Fehler beim Laden der aktiven Feld-Editoren:', error);
+		return {};
+	}
+
+	// Konvertiere Array zu Map: fieldKey -> username
+	const fieldMap = {};
+	(data || []).forEach(item => {
+		fieldMap[item.field_key] = item.username;
+	});
+
+	return fieldMap;
+}
+
+/**
+ * Erstellt eine Realtime-Subscription für Feld-Editor-Änderungen
+ * @param {string} date - Datum im Format YYYY-MM-DD
+ * @param {Function} onFieldEditorsChange - Callback mit fieldMap (fieldKey -> username)
+ * @returns {Object} Subscription-Objekt (zum Unsubscribe)
+ */
+export function subscribeToFieldEditors(date, onFieldEditorsChange) {
+	const subscription = supabase
+		.channel(`field-editors-${date}`)
+		.on(
+			'postgres_changes',
+			{
+				event: '*',
+				schema: 'public',
+				table: 'active_field_editors',
+				filter: `protokoll_date=eq.${date}`
+			},
+			async (payload) => {
+				console.log('Field-Editor-Update empfangen:', payload);
+				// Neue Feld-Editor-Map laden und Callback aufrufen
+				const fieldMap = await getActiveFieldEditors(date);
+				onFieldEditorsChange(fieldMap);
+			}
+		)
+		.subscribe();
+
+	return subscription;
+}
