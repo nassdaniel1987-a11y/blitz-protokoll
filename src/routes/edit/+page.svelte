@@ -861,51 +861,56 @@
 
 				<div class="form-group">
 					<label for="wer_geht_essen">Wer geht essen</label>
-					<input 
-						type="text" 
-						id="wer_geht_essen" 
+					<input
+						type="text"
+						id="wer_geht_essen"
 						bind:value={formData.wer_geht_essen}
 						placeholder="z.B. Anna, Peter"
+						on:input={saveProtokollSilent}
 					/>
 				</div>
 
 				<div class="form-group">
 					<label for="leitung_im_haus">Leitung im Haus</label>
-					<input 
-						type="text" 
-						id="leitung_im_haus" 
+					<input
+						type="text"
+						id="leitung_im_haus"
 						bind:value={formData.leitung_im_haus}
 						placeholder="z.B. Frau Müller"
+						on:input={saveProtokollSilent}
 					/>
 				</div>
 
 				<div class="form-group">
 					<label for="spaetdienst">Spätdienst</label>
-					<input 
-						type="text" 
-						id="spaetdienst" 
+					<input
+						type="text"
+						id="spaetdienst"
 						bind:value={formData.spaetdienst}
 						placeholder="z.B. Herr Schmidt"
+						on:input={saveProtokollSilent}
 					/>
 				</div>
 
 				<div class="form-group">
 					<label for="fruehdienst">Frühdienst nächster Tag</label>
-					<input 
-						type="text" 
-						id="fruehdienst" 
+					<input
+						type="text"
+						id="fruehdienst"
 						bind:value={formData.fruehdienst_naechster_tag}
 						placeholder="z.B. Frau Weber"
+						on:input={saveProtokollSilent}
 					/>
 				</div>
 
 				<div class="form-group">
 					<label for="sonstiges">Sonstiges</label>
-					<textarea 
-						id="sonstiges" 
+					<textarea
+						id="sonstiges"
 						bind:value={formData.sonstiges}
 						rows="4"
 						placeholder="Weitere Anmerkungen..."
+						on:input={saveProtokollSilent}
 					></textarea>
 				</div>
 			</section>
