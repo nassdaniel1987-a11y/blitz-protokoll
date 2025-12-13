@@ -228,10 +228,11 @@
 		protokollSubscription = subscribeToProtokoll(currentDate, async (payload) => {
 			// Wenn jemand anderes speichert, lade Updates automatisch
 			if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-				const neuesProtokoll = await getProtokoll(currentDate);
-				if (neuesProtokoll) {
-					// Merge nur Felder, die der User nicht gerade bearbeitet
-					const currentFieldKey = currentEditingField;
+				try {
+					const neuesProtokoll = await getProtokoll(currentDate);
+					if (neuesProtokoll) {
+						// Merge nur Felder, die der User nicht gerade bearbeitet
+						const currentFieldKey = currentEditingField;
 
 					// Merge Planung (außer aktuell bearbeitetes Feld)
 					zeitslots.forEach(slot => {
@@ -259,6 +260,10 @@
 					formData = formData;
 
 					toast.show('🔄 Live-Update von anderem Nutzer empfangen', 'info', 3000);
+					}
+				} catch (error) {
+					console.error('Fehler beim Laden des Protokoll-Updates:', error);
+					// Ignoriere 406-Fehler (Protokoll existiert nicht)
 				}
 			}
 		});
