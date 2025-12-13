@@ -20,7 +20,11 @@
 		updateHeartbeat,
 		getActiveEditors,
 		subscribeToProtokoll,
-		subscribeToActiveEditors
+		subscribeToActiveEditors,
+		registerFieldEditor,
+		unregisterFieldEditor,
+		getActiveFieldEditors,
+		subscribeToFieldEditors
 	} from '$lib/realtimeService';
 
 	let currentDate = getToday();
@@ -140,6 +144,9 @@
 	let protokollSubscription;
 	let editorsSubscription;
 	let messagesSubscription; // Realtime für Badge-Counter
+	let fieldEditorsSubscription; // Realtime für Feld-Editoren
+	let activeFieldEditors = {}; // Map: fieldKey -> username
+	let currentEditingField = null; // Aktuell bearbeitetes Feld (fieldKey)
 
 	const zeitslots = ['11:40-12:25', '12:25-13:10', '13:10-14:00', '14:00-14:30'];
 
@@ -216,18 +223,42 @@
 			await updateHeartbeat(currentDate, currentUsername);
 		}, 10000);
 
-		// Subscribe zu Protokoll-Änderungen
+		// Subscribe zu Protokoll-Änderungen - mit automatischem Merge
 		protokollSubscription = subscribeToProtokoll(currentDate, async (payload) => {
-			// Wenn jemand anderes speichert, zeige Warnung und frage ob neu laden
+			// Wenn jemand anderes speichert, lade Updates automatisch
 			if (payload.eventType === 'UPDATE') {
-				toast.show('⚠️ Das Protokoll wurde von einem anderen Nutzer geändert!', 'warning', 5000);
-				// Optional: Automatisch neu laden nach 2 Sekunden
-				setTimeout(async () => {
-					const neuesProtokoll = await getProtokoll(currentDate);
-					if (neuesProtokoll && confirm('Das Protokoll wurde geändert. Möchten Sie die Seite neu laden? (Ungespeicherte Änderungen gehen verloren)')) {
-						window.location.reload();
-					}
-				}, 2000);
+				const neuesProtokoll = await getProtokoll(currentDate);
+				if (neuesProtokoll) {
+					// Merge nur Felder, die der User nicht gerade bearbeitet
+					const currentFieldKey = currentEditingField;
+
+					// Merge Planung (außer aktuell bearbeitetes Feld)
+					zeitslots.forEach(slot => {
+						raeume.forEach(raum => {
+							const fieldKey = `${slot}_${raum}`;
+							// Nur updaten wenn User dieses Feld nicht gerade bearbeitet
+							if (fieldKey !== currentFieldKey) {
+								if (formData.planung[slot] && formData.planung[slot][raum] !== neuesProtokoll.inhalt.planung[slot]?.[raum]) {
+									formData.planung[slot][raum] = neuesProtokoll.inhalt.planung[slot]?.[raum] || '';
+								}
+							}
+						});
+					});
+
+					// Merge andere Felder (wenn nicht fokussiert)
+					if (currentFieldKey !== 'anwesenheit') formData.anwesenheit = neuesProtokoll.inhalt.anwesenheit;
+					if (currentFieldKey !== 'abwesend') formData.abwesend = neuesProtokoll.inhalt.abwesend;
+					if (currentFieldKey !== 'wer_geht_essen') formData.wer_geht_essen = neuesProtokoll.inhalt.wer_geht_essen;
+					if (currentFieldKey !== 'leitung_im_haus') formData.leitung_im_haus = neuesProtokoll.inhalt.leitung_im_haus;
+					if (currentFieldKey !== 'spaetdienst') formData.spaetdienst = neuesProtokoll.inhalt.spaetdienst;
+					if (currentFieldKey !== 'fruehdienst_naechster_tag') formData.fruehdienst_naechster_tag = neuesProtokoll.inhalt.fruehdienst_naechster_tag;
+					if (currentFieldKey !== 'sonstiges') formData.sonstiges = neuesProtokoll.inhalt.sonstiges;
+
+					// Reaktivität triggern
+					formData = formData;
+
+					toast.show('🔄 Live-Update von anderem Nutzer empfangen', 'info', 3000);
+				}
 			}
 		});
 
@@ -235,6 +266,14 @@
 		editorsSubscription = subscribeToActiveEditors(currentDate, (editors) => {
 			activeEditors = editors.filter(e => e.username !== currentUsername);
 		});
+
+		// Subscribe zu Feld-Editoren (für Field-Level Locking)
+		fieldEditorsSubscription = subscribeToFieldEditors(currentDate, (fieldMap) => {
+			activeFieldEditors = fieldMap;
+		});
+
+		// Lade initial die aktiven Feld-Editoren
+		activeFieldEditors = await getActiveFieldEditors(currentDate);
 
 		// REALTIME: Subscribe zu Team-Nachrichten für Badge-Counter
 		messagesSubscription = supabase
@@ -255,6 +294,11 @@
 
 	// REALTIME: Cleanup beim Verlassen der Seite
 	onDestroy(async () => {
+		// Aktuelles Feld freigeben
+		if (currentEditingField && currentDate && currentUsername) {
+			await unregisterFieldEditor(currentDate, currentEditingField, currentUsername);
+		}
+
 		// Editor abmelden
 		if (currentDate && currentUsername) {
 			await unregisterEditor(currentDate, currentUsername);
@@ -271,6 +315,9 @@
 		}
 		if (editorsSubscription) {
 			await supabase.removeChannel(editorsSubscription);
+		}
+		if (fieldEditorsSubscription) {
+			await supabase.removeChannel(fieldEditorsSubscription);
 		}
 		if (messagesSubscription) {
 			await supabase.removeChannel(messagesSubscription);
@@ -482,16 +529,26 @@
 	}
 
 	// PAINT MODE: Person in Tabellenfeld hinzufügen/entfernen (Toggle) ODER löschen mit Radierer
-	function togglePersonInFeld(slot, raum) {
+	async function togglePersonInFeld(slot, raum) {
+		// Registriere Feld-Bearbeitung
+		const fieldKey = `${slot}_${raum}`;
+		await handleFieldFocus(fieldKey);
+
 		// Radierer-Modus: Komplette Zelle löschen
 		if (eraserMode) {
 			formData.planung[slot][raum] = '';
 			formData = formData;
+			// Speichere sofort bei Paint-Mode-Änderungen
+			await handleSave();
+			await handleFieldBlur(fieldKey);
 			return;
 		}
 
 		// Normale Person-Zuweisung
-		if (!selectedPerson) return; // Keine Person ausgewählt
+		if (!selectedPerson) {
+			await handleFieldBlur(fieldKey);
+			return; // Keine Person ausgewählt
+		}
 
 		const currentValue = formData.planung[slot][raum] || '';
 		const personen = currentValue.split(',').map(p => p.trim()).filter(p => p);
@@ -508,6 +565,30 @@
 
 		// Trigger Reaktivität
 		formData = formData;
+
+		// Speichere sofort bei Paint-Mode-Änderungen
+		await handleSave();
+		await handleFieldBlur(fieldKey);
+	}
+
+	// REALTIME: Feld-Fokus - Registriere als aktiver Editor
+	async function handleFieldFocus(fieldKey) {
+		// Altes Feld freigeben
+		if (currentEditingField && currentEditingField !== fieldKey) {
+			await unregisterFieldEditor(currentDate, currentEditingField, currentUsername);
+		}
+
+		// Neues Feld registrieren
+		currentEditingField = fieldKey;
+		await registerFieldEditor(currentDate, fieldKey, currentUsername);
+	}
+
+	// REALTIME: Feld-Blur - Feld freigeben
+	async function handleFieldBlur(fieldKey) {
+		if (currentEditingField === fieldKey) {
+			await unregisterFieldEditor(currentDate, fieldKey, currentUsername);
+			currentEditingField = null;
+		}
 	}
 
 	function toggleTooltip(tooltipId) {
@@ -998,9 +1079,18 @@
 														bind:value={formData.planung[slot][raum]}
 														placeholder="..."
 														class="matrix-input"
+														class:field-locked={activeFieldEditors[`${slot}_${raum}`] && activeFieldEditors[`${slot}_${raum}`] !== currentUsername}
 														rows="1"
 														on:input={autoResize}
+														on:focus={() => handleFieldFocus(`${slot}_${raum}`)}
+														on:blur={() => handleFieldBlur(`${slot}_${raum}`)}
+														disabled={activeFieldEditors[`${slot}_${raum}`] && activeFieldEditors[`${slot}_${raum}`] !== currentUsername}
 													></textarea>
+													{#if activeFieldEditors[`${slot}_${raum}`] && activeFieldEditors[`${slot}_${raum}`] !== currentUsername}
+														<div class="field-editor-indicator">
+															🔒 {activeFieldEditors[`${slot}_${raum}`]}
+														</div>
+													{/if}
 												{/if}
 											</td>
 										{/each}
@@ -2028,6 +2118,44 @@
 		right: 5px;
 		font-size: 14px;
 		opacity: 0.6;
+	}
+
+	/* Field-Level Locking Styles */
+	.matrix-input.field-locked {
+		background: repeating-linear-gradient(
+			45deg,
+			var(--bg-primary),
+			var(--bg-primary) 10px,
+			var(--border-color) 10px,
+			var(--border-color) 11px
+		);
+		cursor: not-allowed;
+		border-color: #e74c3c;
+		opacity: 0.7;
+	}
+
+	.field-editor-indicator {
+		position: absolute;
+		bottom: 2px;
+		right: 4px;
+		font-size: 10px;
+		color: #e74c3c;
+		background: rgba(231, 76, 60, 0.1);
+		padding: 2px 6px;
+		border-radius: 4px;
+		font-weight: 600;
+		pointer-events: none;
+		white-space: nowrap;
+		z-index: 5;
+	}
+
+	:global(.dark-mode) .field-editor-indicator {
+		background: rgba(231, 76, 60, 0.2);
+		color: #ff6b6b;
+	}
+
+	.matrix-cell {
+		position: relative;
 	}
 
 	@media (max-width: 768px) {
