@@ -147,6 +147,7 @@
 	let fieldEditorsSubscription; // Realtime für Feld-Editoren
 	let activeFieldEditors = {}; // Map: fieldKey -> username
 	let currentEditingField = null; // Aktuell bearbeitetes Feld (fieldKey)
+	let autoSaveTimeout = null; // Timeout für Auto-Save (Debouncing)
 
 	const zeitslots = ['11:40-12:25', '12:25-13:10', '13:10-14:00', '14:00-14:30'];
 
@@ -309,6 +310,11 @@
 			clearInterval(heartbeatInterval);
 		}
 
+		// Auto-Save Timeout stoppen
+		if (autoSaveTimeout) {
+			clearTimeout(autoSaveTimeout);
+		}
+
 		// Subscriptions beenden
 		if (protokollSubscription) {
 			await supabase.removeChannel(protokollSubscription);
@@ -421,7 +427,7 @@
 	async function handleSave() {
 		saving = true;
 		const result = await saveProtokoll(currentDate, formData);
-		
+
 		if (result) {
 			toast.show('Protokoll erfolgreich gespeichert!', 'success');
 			setTimeout(() => {
@@ -432,6 +438,26 @@
 			toast.show('Fehler beim Speichern des Protokolls!', 'error');
 		}
 		saving = false;
+	}
+
+	// REALTIME: Silent Save (ohne Navigation) mit Debouncing
+	async function saveProtokollSilent() {
+		// Lösche alten Timeout
+		if (autoSaveTimeout) {
+			clearTimeout(autoSaveTimeout);
+		}
+
+		// Setze neuen Timeout (1 Sekunde Debounce)
+		autoSaveTimeout = setTimeout(async () => {
+			const result = await saveProtokoll(currentDate, formData);
+
+			if (result) {
+				// Kein Toast, kein Redirect - nur leises Speichern
+				console.log('Auto-Save erfolgreich');
+			} else {
+				console.error('Auto-Save fehlgeschlagen');
+			}
+		}, 1000); // 1 Sekunde warten vor dem Speichern
 	}
 
 	function handleCancel() {
@@ -538,8 +564,8 @@
 		if (eraserMode) {
 			formData.planung[slot][raum] = '';
 			formData = formData;
-			// Speichere sofort bei Paint-Mode-Änderungen
-			await handleSave();
+			// Starte Auto-Save (debounced)
+			saveProtokollSilent();
 			await handleFieldBlur(fieldKey);
 			return;
 		}
@@ -566,8 +592,8 @@
 		// Trigger Reaktivität
 		formData = formData;
 
-		// Speichere sofort bei Paint-Mode-Änderungen
-		await handleSave();
+		// Starte Auto-Save (debounced)
+		saveProtokollSilent();
 		await handleFieldBlur(fieldKey);
 	}
 
@@ -1081,7 +1107,7 @@
 														class="matrix-input"
 														class:field-locked={activeFieldEditors[`${slot}_${raum}`] && activeFieldEditors[`${slot}_${raum}`] !== currentUsername}
 														rows="1"
-														on:input={autoResize}
+														on:input={(e) => { autoResize(e); saveProtokollSilent(); }}
 														on:focus={() => handleFieldFocus(`${slot}_${raum}`)}
 														on:blur={() => handleFieldBlur(`${slot}_${raum}`)}
 														disabled={activeFieldEditors[`${slot}_${raum}`] && activeFieldEditors[`${slot}_${raum}`] !== currentUsername}
