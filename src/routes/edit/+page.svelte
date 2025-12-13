@@ -227,7 +227,7 @@
 		// Subscribe zu Protokoll-Änderungen - mit automatischem Merge
 		protokollSubscription = subscribeToProtokoll(currentDate, async (payload) => {
 			// Wenn jemand anderes speichert, lade Updates automatisch
-			if (payload.eventType === 'UPDATE') {
+			if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
 				const neuesProtokoll = await getProtokoll(currentDate);
 				if (neuesProtokoll) {
 					// Merge nur Felder, die der User nicht gerade bearbeitet
