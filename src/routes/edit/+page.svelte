@@ -228,10 +228,11 @@
 		protokollSubscription = subscribeToProtokoll(currentDate, async (payload) => {
 			// Wenn jemand anderes speichert, lade Updates automatisch
 			if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-				const neuesProtokoll = await getProtokoll(currentDate);
-				if (neuesProtokoll) {
-					// Merge nur Felder, die der User nicht gerade bearbeitet
-					const currentFieldKey = currentEditingField;
+				try {
+					const neuesProtokoll = await getProtokoll(currentDate);
+					if (neuesProtokoll) {
+						// Merge nur Felder, die der User nicht gerade bearbeitet
+						const currentFieldKey = currentEditingField;
 
 					// Merge Planung (außer aktuell bearbeitetes Feld)
 					zeitslots.forEach(slot => {
@@ -259,6 +260,10 @@
 					formData = formData;
 
 					toast.show('🔄 Live-Update von anderem Nutzer empfangen', 'info', 3000);
+					}
+				} catch (error) {
+					console.error('Fehler beim Laden des Protokoll-Updates:', error);
+					// Ignoriere 406-Fehler (Protokoll existiert nicht)
 				}
 			}
 		});
@@ -861,51 +866,56 @@
 
 				<div class="form-group">
 					<label for="wer_geht_essen">Wer geht essen</label>
-					<input 
-						type="text" 
-						id="wer_geht_essen" 
+					<input
+						type="text"
+						id="wer_geht_essen"
 						bind:value={formData.wer_geht_essen}
 						placeholder="z.B. Anna, Peter"
+						on:input={saveProtokollSilent}
 					/>
 				</div>
 
 				<div class="form-group">
 					<label for="leitung_im_haus">Leitung im Haus</label>
-					<input 
-						type="text" 
-						id="leitung_im_haus" 
+					<input
+						type="text"
+						id="leitung_im_haus"
 						bind:value={formData.leitung_im_haus}
 						placeholder="z.B. Frau Müller"
+						on:input={saveProtokollSilent}
 					/>
 				</div>
 
 				<div class="form-group">
 					<label for="spaetdienst">Spätdienst</label>
-					<input 
-						type="text" 
-						id="spaetdienst" 
+					<input
+						type="text"
+						id="spaetdienst"
 						bind:value={formData.spaetdienst}
 						placeholder="z.B. Herr Schmidt"
+						on:input={saveProtokollSilent}
 					/>
 				</div>
 
 				<div class="form-group">
 					<label for="fruehdienst">Frühdienst nächster Tag</label>
-					<input 
-						type="text" 
-						id="fruehdienst" 
+					<input
+						type="text"
+						id="fruehdienst"
 						bind:value={formData.fruehdienst_naechster_tag}
 						placeholder="z.B. Frau Weber"
+						on:input={saveProtokollSilent}
 					/>
 				</div>
 
 				<div class="form-group">
 					<label for="sonstiges">Sonstiges</label>
-					<textarea 
-						id="sonstiges" 
+					<textarea
+						id="sonstiges"
 						bind:value={formData.sonstiges}
 						rows="4"
 						placeholder="Weitere Anmerkungen..."
+						on:input={saveProtokollSilent}
 					></textarea>
 				</div>
 			</section>
