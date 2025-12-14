@@ -996,9 +996,18 @@
 						<button type="button" class="help-btn" on:click={() => toggleTooltip('schnellzuweisung')} title="Hilfe">?</button>
 						{#if activeTooltip === 'schnellzuweisung'}
 							<div class="tooltip-box">
-								<strong>Schnellzuweisung:</strong>
-								<br>Wähle eine Person aus (wird farbig markiert), dann klicke auf beliebige Felder in der Tabelle, um diese Person schnell zuzuweisen.
-								Mit dem Radierer kannst du Zuweisungen schnell löschen. Die Zahlen zeigen dir, wie viele Zeitslots die Person bereits hat.
+								<strong>Schnellzuweisung (Paint-Mode):</strong>
+								<br><br>
+								<strong>Person hinzufügen/entfernen (Toggle):</strong>
+								<br>• Wähle eine Person aus (wird farbig)
+								<br>• Klick auf Feld → Person wird hinzugefügt
+								<br>• Nochmal klicken → Person wird entfernt ✅
+								<br><br>
+								<strong>Radierer (ganzes Feld löschen):</strong>
+								<br>• Klick auf 🗑️ Radierer
+								<br>• Klick auf Feld → alles wird gelöscht
+								<br><br>
+								Die Zahlen zeigen Zeitslots pro Person (max. 3).
 							</div>
 						{/if}
 					</h2>
