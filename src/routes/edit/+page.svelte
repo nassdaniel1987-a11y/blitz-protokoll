@@ -352,6 +352,28 @@
 		// NEU: Leite die Abwesenden automatisch ab
 		const abwesendePersonen = allePersonen.filter(p => !anwesenheitArray.includes(p));
 		formData.abwesend = arrayToString(abwesendePersonen);
+
+		// AUTO-REMOVE: Entferne abwesende Personen aus der Planung
+		abwesendePersonen.forEach(person => {
+			zeitslots.forEach(slot => {
+				raeume.forEach(raum => {
+					const currentValue = formData.planung[slot]?.[raum] || '';
+					const personen = currentValue.split(',').map(p => p.trim()).filter(p => p);
+					const filtered = personen.filter(p => p !== person);
+
+					// Nur updaten wenn sich was geändert hat
+					if (filtered.length !== personen.length) {
+						formData.planung[slot][raum] = filtered.join(', ');
+					}
+				});
+			});
+		});
+
+		// Trigger Reaktivität
+		formData = formData;
+
+		// Auto-Save nach Anwesenheitsänderung
+		saveProtokollSilent();
 	}
 
 	function handlePlanungUpdate(event) {
