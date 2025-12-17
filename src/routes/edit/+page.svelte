@@ -144,6 +144,7 @@
 	let showChangelog = false;
 	let changelogEntries = [];
 	let loadingChangelog = false;
+	let originalProtokollData = null; // Original-Daten beim Laden (für Changelog-Vergleich)
 
 	// REALTIME: Variablen für gleichzeitiges Bearbeiten
 	let activeEditors = [];
@@ -210,6 +211,9 @@
 					}
 				});
 			});
+
+			// CHANGELOG: Speichere Original-Daten für späteren Vergleich
+			originalProtokollData = JSON.parse(JSON.stringify(formData));
 		} else {
 			isNewProtokoll = true;
 			formData = createEmptyProtokoll();
@@ -217,6 +221,9 @@
 			anwesenheitArray = [...allePersonen];
 			formData.anwesenheit = arrayToString(anwesenheitArray);
 			formData.abwesend = ''; // Niemand abwesend
+
+			// CHANGELOG: Speichere Original-Daten (leer bei neuem Protokoll)
+			originalProtokollData = null;
 		}
 		loading = false;
 
@@ -476,9 +483,9 @@
 	async function handleSave() {
 		saving = true;
 
-		// CHANGELOG: Lade alte Version für Vergleich
-		const oldProtokoll = await getProtokoll(currentDate);
-		console.log('🔍 DEBUG: oldProtokoll:', oldProtokoll);
+		// CHANGELOG: Verwende gespeicherte Original-Daten statt erneut aus DB zu laden
+		// (wichtig wegen Auto-Save, der sonst die Änderungen schon gespeichert hätte)
+		console.log('🔍 DEBUG: originalProtokollData:', originalProtokollData);
 		console.log('🔍 DEBUG: formData:', formData);
 
 		// Speichere das Protokoll
@@ -486,16 +493,19 @@
 
 		if (result) {
 			// CHANGELOG: Logge Änderungen
-			if (!oldProtokoll) {
+			if (!originalProtokollData) {
 				// NEU: Protokoll erstellt
 				console.log('✨ Protokoll NEU erstellt');
 				await logChange(currentDate, currentUsername, 'create', {
 					description: 'Protokoll erstellt'
 				});
 			} else {
-				// UPDATE: Vergleiche und logge Änderungen
+				// UPDATE: Vergleiche Original-Daten mit aktuellen Daten
 				console.log('📝 Protokoll wird AKTUALISIERT - vergleiche Änderungen...');
-				const changes = compareProtocols(oldProtokoll, formData, zeitslots, raeume);
+
+				// Wrappe originalProtokollData im gleichen Format wie getProtokoll()
+				const oldProtokollWrapped = { inhalt: originalProtokollData };
+				const changes = compareProtocols(oldProtokollWrapped, formData, zeitslots, raeume);
 				console.log('🔍 DEBUG: Gefundene Änderungen:', changes);
 				console.log('🔍 DEBUG: Anzahl Änderungen:', changes.length);
 
@@ -508,6 +518,9 @@
 					});
 				}
 			}
+
+			// CHANGELOG: Aktualisiere Original-Daten für nächsten Save
+			originalProtokollData = JSON.parse(JSON.stringify(formData));
 
 			toast.show('Protokoll erfolgreich gespeichert!', 'success');
 			setTimeout(() => {
