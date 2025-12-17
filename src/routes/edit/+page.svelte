@@ -140,6 +140,11 @@
 	let showNachrichtenModal = false;
 	let messageCount = 0;
 
+	// CHANGELOG: Änderungshistorie
+	let showChangelog = false;
+	let changelogEntries = [];
+	let loadingChangelog = false;
+
 	// REALTIME: Variablen für gleichzeitiges Bearbeiten
 	let activeEditors = [];
 	let heartbeatInterval;
@@ -725,6 +730,22 @@
 			toast.show('Fehler beim Speichern der Vorlage!', 'error');
 		}
 	}
+
+	// CHANGELOG: Lade Änderungshistorie
+	async function loadChangelog() {
+		loadingChangelog = true;
+		const { getChangelog, formatChangelogEntry } = await import('$lib/changelogService');
+		changelogEntries = await getChangelog(currentDate);
+		loadingChangelog = false;
+	}
+
+	// CHANGELOG: Toggle Changelog-Anzeige
+	async function toggleChangelog() {
+		showChangelog = !showChangelog;
+		if (showChangelog && changelogEntries.length === 0) {
+			await loadChangelog();
+		}
+	}
 </script>
 
 <TeamNachrichtenModal
@@ -1226,6 +1247,63 @@
 				</button>
 			</div>
 		</form>
+
+		<!-- CHANGELOG: Änderungshistorie -->
+		<section class="changelog-section">
+			<button
+				type="button"
+				class="changelog-toggle"
+				on:click={toggleChangelog}
+			>
+				📋 Änderungshistorie
+				<span class="toggle-icon">{showChangelog ? '▼' : '▶'}</span>
+			</button>
+
+			{#if showChangelog}
+				<div class="changelog-content">
+					{#if loadingChangelog}
+						<p class="changelog-loading">Lade Änderungshistorie...</p>
+					{:else if changelogEntries.length === 0}
+						<p class="changelog-empty">Noch keine Änderungen vorhanden.</p>
+					{:else}
+						<ul class="changelog-list">
+							{#each changelogEntries as entry}
+								<li class="changelog-entry">
+									<div class="changelog-timestamp">
+										{new Date(entry.timestamp).toLocaleString('de-DE', {
+											day: '2-digit',
+											month: '2-digit',
+											year: 'numeric',
+											hour: '2-digit',
+											minute: '2-digit'
+										})}
+									</div>
+									<div class="changelog-user">
+										👤 {entry.username}
+									</div>
+									<div class="changelog-change">
+										{#if entry.change_type === 'create'}
+											<span class="change-type-create">✨ {entry.description || 'Protokoll erstellt'}</span>
+										{:else if entry.description}
+											<span class="change-type-update">{entry.description}</span>
+										{:else}
+											<div class="change-details">
+												<strong>{entry.field_name}:</strong>
+												<div class="change-values">
+													<span class="old-value">"{entry.old_value || '(leer)'}"</span>
+													<span class="arrow">→</span>
+													<span class="new-value">"{entry.new_value || '(leer)'}"</span>
+												</div>
+											</div>
+										{/if}
+									</div>
+								</li>
+							{/each}
+						</ul>
+					{/if}
+				</div>
+			{/if}
+		</section>
 	{/if}
 </div>
 
@@ -2263,6 +2341,154 @@
 
 	.matrix-cell {
 		position: relative;
+	}
+
+	/* CHANGELOG: Änderungshistorie Styles */
+	.changelog-section {
+		margin-top: 30px;
+		border: 1px solid var(--border-color);
+		border-radius: 8px;
+		overflow: hidden;
+		background: var(--bg-color);
+	}
+
+	.changelog-toggle {
+		width: 100%;
+		padding: 15px 20px;
+		background: var(--secondary-bg-color);
+		border: none;
+		text-align: left;
+		cursor: pointer;
+		font-size: 16px;
+		font-weight: 600;
+		color: var(--text-color);
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		transition: background 0.2s ease;
+	}
+
+	.changelog-toggle:hover {
+		background: var(--hover-bg-color);
+	}
+
+	.toggle-icon {
+		font-size: 12px;
+		transition: transform 0.2s ease;
+	}
+
+	.changelog-content {
+		padding: 20px;
+		max-height: 500px;
+		overflow-y: auto;
+		border-top: 1px solid var(--border-color);
+	}
+
+	.changelog-loading,
+	.changelog-empty {
+		color: var(--text-muted);
+		text-align: center;
+		padding: 20px;
+		font-style: italic;
+	}
+
+	.changelog-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.changelog-entry {
+		padding: 15px;
+		margin-bottom: 10px;
+		background: var(--secondary-bg-color);
+		border-radius: 6px;
+		border-left: 3px solid var(--primary-color);
+	}
+
+	.changelog-timestamp {
+		font-size: 12px;
+		color: var(--text-muted);
+		margin-bottom: 5px;
+	}
+
+	.changelog-user {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--primary-color);
+		margin-bottom: 8px;
+	}
+
+	.changelog-change {
+		font-size: 14px;
+		color: var(--text-color);
+	}
+
+	.change-type-create {
+		color: #27ae60;
+		font-weight: 600;
+	}
+
+	.change-type-update {
+		color: var(--text-color);
+	}
+
+	.change-details {
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
+	}
+
+	.change-values {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		flex-wrap: wrap;
+		margin-top: 5px;
+	}
+
+	.old-value {
+		color: #e74c3c;
+		font-family: monospace;
+		background: rgba(231, 76, 60, 0.1);
+		padding: 2px 6px;
+		border-radius: 3px;
+	}
+
+	.new-value {
+		color: #27ae60;
+		font-family: monospace;
+		background: rgba(39, 174, 96, 0.1);
+		padding: 2px 6px;
+		border-radius: 3px;
+	}
+
+	.arrow {
+		color: var(--text-muted);
+		font-weight: bold;
+	}
+
+	:global(.dark-mode) .changelog-toggle {
+		background: #2c3e50;
+	}
+
+	:global(.dark-mode) .changelog-toggle:hover {
+		background: #34495e;
+	}
+
+	:global(.dark-mode) .changelog-entry {
+		background: #2c3e50;
+		border-left-color: #3498db;
+	}
+
+	:global(.dark-mode) .old-value {
+		background: rgba(231, 76, 60, 0.2);
+		color: #ff6b6b;
+	}
+
+	:global(.dark-mode) .new-value {
+		background: rgba(39, 174, 96, 0.2);
+		color: #5dde8e;
 	}
 
 	@media (max-width: 768px) {
