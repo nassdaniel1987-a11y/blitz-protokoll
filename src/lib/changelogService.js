@@ -55,6 +55,25 @@ export async function getChangelog(protokollDate, limit = 50) {
 }
 
 /**
+ * Löscht alle Changelog-Einträge für ein bestimmtes Protokoll
+ * @param {string} protokollDate - Datum des Protokolls (YYYY-MM-DD)
+ * @returns {Promise<boolean>}
+ */
+export async function deleteChangelog(protokollDate) {
+	const { error } = await supabase
+		.from('protocol_changelog')
+		.delete()
+		.eq('protokoll_date', protokollDate);
+
+	if (error) {
+		console.error('Fehler beim Löschen des Changelogs:', error);
+		return false;
+	}
+
+	return true;
+}
+
+/**
  * Vergleicht zwei Protokoll-Objekte und erstellt eine Liste von Änderungen
  * @param {Object} oldData - Alte Protokoll-Daten
  * @param {Object} newData - Neue Protokoll-Daten
