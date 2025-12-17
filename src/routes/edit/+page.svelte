@@ -478,6 +478,8 @@
 
 		// CHANGELOG: Lade alte Version für Vergleich
 		const oldProtokoll = await getProtokoll(currentDate);
+		console.log('🔍 DEBUG: oldProtokoll:', oldProtokoll);
+		console.log('🔍 DEBUG: formData:', formData);
 
 		// Speichere das Protokoll
 		const result = await saveProtokoll(currentDate, formData);
@@ -486,13 +488,19 @@
 			// CHANGELOG: Logge Änderungen
 			if (!oldProtokoll) {
 				// NEU: Protokoll erstellt
+				console.log('✨ Protokoll NEU erstellt');
 				await logChange(currentDate, currentUsername, 'create', {
 					description: 'Protokoll erstellt'
 				});
 			} else {
 				// UPDATE: Vergleiche und logge Änderungen
+				console.log('📝 Protokoll wird AKTUALISIERT - vergleiche Änderungen...');
 				const changes = compareProtocols(oldProtokoll, formData, zeitslots, raeume);
+				console.log('🔍 DEBUG: Gefundene Änderungen:', changes);
+				console.log('🔍 DEBUG: Anzahl Änderungen:', changes.length);
+
 				for (const change of changes) {
+					console.log('💾 Logge Änderung:', change);
 					await logChange(currentDate, currentUsername, 'update', {
 						fieldName: change.fieldName,
 						oldValue: change.oldValue,
