@@ -13,6 +13,8 @@
 	import PersonenKacheln from '$lib/components/PersonenKacheln.svelte';
 	import TeamNachrichtenModal from '$lib/components/TeamNachrichtenModal.svelte';
 	import { saveVorlagen } from '$lib/einstellungenService';
+	// CHANGELOG: Import für Änderungsprotokoll
+	import { logChange, compareProtocols } from '$lib/changelogService';
 	// REALTIME: Import für gleichzeitiges Bearbeiten
 	import {
 		registerEditor,
@@ -468,9 +470,32 @@
 
 	async function handleSave() {
 		saving = true;
+
+		// CHANGELOG: Lade alte Version für Vergleich
+		const oldProtokoll = await getProtokoll(currentDate);
+
+		// Speichere das Protokoll
 		const result = await saveProtokoll(currentDate, formData);
 
 		if (result) {
+			// CHANGELOG: Logge Änderungen
+			if (!oldProtokoll) {
+				// NEU: Protokoll erstellt
+				await logChange(currentDate, currentUsername, 'create', {
+					description: 'Protokoll erstellt'
+				});
+			} else {
+				// UPDATE: Vergleiche und logge Änderungen
+				const changes = compareProtocols(oldProtokoll, formData, zeitslots, raeume);
+				for (const change of changes) {
+					await logChange(currentDate, currentUsername, 'update', {
+						fieldName: change.fieldName,
+						oldValue: change.oldValue,
+						newValue: change.newValue
+					});
+				}
+			}
+
 			toast.show('Protokoll erfolgreich gespeichert!', 'success');
 			setTimeout(() => {
 				// GEÄNDERT: Gehe zur Dashboard-Seite mit dem korrekten Datum
