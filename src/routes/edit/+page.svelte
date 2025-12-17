@@ -355,11 +355,26 @@
 
 		// AUTO-REMOVE: Entferne abwesende Personen aus der Planung
 		abwesendePersonen.forEach(person => {
+			const personNormalized = person.trim().toLowerCase();
+
 			zeitslots.forEach(slot => {
 				raeume.forEach(raum => {
 					const currentValue = formData.planung[slot]?.[raum] || '';
 					const personen = currentValue.split(',').map(p => p.trim()).filter(p => p);
-					const filtered = personen.filter(p => p !== person);
+
+					// Filtere Personen mit flexiblem Matching
+					const filtered = personen.filter(p => {
+						const pNormalized = p.trim().toLowerCase();
+
+						// Exakter Match
+						if (pNormalized === personNormalized) return false;
+
+						// Teilstring-Match (z.B. "Anna Schmidt" enthält "Anna")
+						if (pNormalized.includes(personNormalized)) return false;
+						if (personNormalized.includes(pNormalized)) return false;
+
+						return true;
+					});
 
 					// Nur updaten wenn sich was geändert hat
 					if (filtered.length !== personen.length) {
