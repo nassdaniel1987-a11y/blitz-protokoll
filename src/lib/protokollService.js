@@ -1,5 +1,6 @@
 // src/lib/protokollService.js
 import { supabase } from './supabaseClient';
+import { deleteChangelog } from './changelogService';
 
 /**
  * Protokoll für ein bestimmtes Datum laden
@@ -98,6 +99,10 @@ export async function saveProtokoll(datum, inhalt) {
  * @returns {boolean} true bei Erfolg, false bei Fehler
  */
 export async function deleteProtokoll(datum) {
+	// Lösche zuerst die Changelog-Einträge für dieses Protokoll
+	await deleteChangelog(datum);
+
+	// Dann lösche das Protokoll selbst
 	const { error } = await supabase
 		.from('protokolle')
 		.delete()
