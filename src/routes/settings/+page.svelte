@@ -95,6 +95,22 @@
 		raeume = raeume.filter((_, i) => i !== index);
 	}
 
+	function moveRaumUp(index) {
+		if (index > 0) {
+			const newRaeume = [...raeume];
+			[newRaeume[index - 1], newRaeume[index]] = [newRaeume[index], newRaeume[index - 1]];
+			raeume = newRaeume;
+		}
+	}
+
+	function moveRaumDown(index) {
+		if (index < raeume.length - 1) {
+			const newRaeume = [...raeume];
+			[newRaeume[index], newRaeume[index + 1]] = [newRaeume[index + 1], newRaeume[index]];
+			raeume = newRaeume;
+		}
+	}
+
 	async function removeVorlage(index) {
 		const vorlage = vorlagen[index];
 		if (confirm(`Vorlage "${vorlage.name}" wirklich löschen?`)) {
@@ -408,14 +424,34 @@
 							<span class="person-name">{raum.label}</span>
 							<span class="raum-id">({raum.id})</span>
 						</div>
-						<button
-							type="button"
-							on:click={() => removeRaum(index)}
-							class="remove-btn"
-							title="Raum entfernen"
-						>
-							✕
-						</button>
+						<div class="raum-actions">
+							<button
+								type="button"
+								on:click={() => moveRaumUp(index)}
+								class="move-btn"
+								title="Nach oben verschieben"
+								disabled={index === 0}
+							>
+								▲
+							</button>
+							<button
+								type="button"
+								on:click={() => moveRaumDown(index)}
+								class="move-btn"
+								title="Nach unten verschieben"
+								disabled={index === raeume.length - 1}
+							>
+								▼
+							</button>
+							<button
+								type="button"
+								on:click={() => removeRaum(index)}
+								class="remove-btn"
+								title="Raum entfernen"
+							>
+								✕
+							</button>
+						</div>
 					</div>
 				{/each}
 			</div>
@@ -674,6 +710,33 @@
 	.person-name {
 		color: var(--text-primary);
 		font-size: 1rem;
+	}
+
+	.raum-actions {
+		display: flex;
+		gap: 8px;
+		align-items: center;
+	}
+
+	.move-btn {
+		padding: 4px 8px;
+		background: var(--color-primary);
+		color: white;
+		border: none;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 14px;
+		line-height: 1;
+		transition: opacity 0.2s, background 0.2s;
+	}
+
+	.move-btn:hover:not(:disabled) {
+		background: var(--color-primary-dark);
+	}
+
+	.move-btn:disabled {
+		opacity: 0.3;
+		cursor: not-allowed;
 	}
 
 	.remove-btn {
