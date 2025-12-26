@@ -15,6 +15,8 @@
 	import { saveVorlagen } from '$lib/einstellungenService';
 	// CHANGELOG: Import für Änderungsprotokoll
 	import { logChange, compareProtocols } from '$lib/changelogService';
+	// ADMIN: Import für Admin-Check
+	import { isCurrentUserAdmin } from '$lib/userManagementService';
 	// REALTIME: Import für gleichzeitiges Bearbeiten
 	import {
 		registerEditor,
@@ -140,6 +142,10 @@
 	let showNachrichtenModal = false;
 	let messageCount = 0;
 
+	// ADMIN: Experimentelle Features
+	let isAdmin = false;
+	let showExperimentalSection = false;
+
 	// CHANGELOG: Änderungshistorie
 	let showChangelog = false;
 	let changelogEntries = [];
@@ -169,6 +175,9 @@
 		// Username extrahieren
 		const email = data.session.user.email;
 		currentUsername = email.split('@')[0];
+
+		// ADMIN: Prüfe ob User Admin ist
+		isAdmin = await isCurrentUserAdmin();
 
 		// NEU: Lade die komplette Personenliste und Raumliste
 		allePersonen = await getPersonen();
@@ -860,6 +869,63 @@
 					{/if}
 					Änderungen können überschrieben werden!
 				</span>
+			</div>
+		{/if}
+
+		<!-- EXPERIMENTAL: Admin-only features -->
+		{#if isAdmin}
+			<div class="experimental-section">
+				<button
+					type="button"
+					class="experimental-toggle"
+					on:click={() => showExperimentalSection = !showExperimentalSection}
+				>
+					🧪 Experimentelle Features (nur für Admins)
+					<span class="toggle-icon">{showExperimentalSection ? '▼' : '▶'}</span>
+				</button>
+
+				{#if showExperimentalSection}
+					<div class="experimental-content">
+						<div class="experimental-header">
+							<p class="experimental-description">
+								⚠️ Diese Features sind in der Testphase. Sie ändern nichts an der normalen Funktionalität,
+								sondern bieten alternative Workflows zum Ausprobieren.
+							</p>
+						</div>
+
+						<!-- Feature 1: Von gestern kopieren -->
+						<div class="experimental-feature">
+							<h3>📋 Von gestern kopieren</h3>
+							<p class="feature-description">
+								Kopiert das Protokoll vom Vortag und übernimmt alle Einträge.
+								Danach können nur noch die Änderungen gemacht werden (z.B. Krankmeldungen).
+							</p>
+							<button
+								type="button"
+								on:click={copyFromYesterday}
+								class="btn-experimental"
+							>
+								📋 Von gestern kopieren
+							</button>
+						</div>
+
+						<!-- Feature 2: Tap-Zelle Person Picker (coming soon) -->
+						<div class="experimental-feature experimental-disabled">
+							<h3>👆 Tap-Zelle → Person auswählen</h3>
+							<p class="feature-description">
+								Alternative zur Paint-Mode: Tippe auf eine Zelle und wähle direkt aus einer Liste
+								die Personen aus. Kein Hin-und-Her-Scrollen mehr nötig.
+							</p>
+							<button
+								type="button"
+								class="btn-experimental"
+								disabled
+							>
+								🚧 In Entwicklung
+							</button>
+						</div>
+					</div>
+				{/if}
 			</div>
 		{/if}
 
@@ -2037,6 +2103,118 @@
 			opacity: 0.95;
 			transform: scale(1.005);
 		}
+	}
+
+	/* EXPERIMENTAL: Styles für experimentelle Features */
+	.experimental-section {
+		margin-bottom: 20px;
+		border: 2px solid #6c757d;
+		border-radius: 12px;
+		overflow: hidden;
+		background: var(--bg-color);
+	}
+
+	.experimental-toggle {
+		width: 100%;
+		padding: 16px 20px;
+		background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+		color: white;
+		border: none;
+		text-align: left;
+		cursor: pointer;
+		font-size: 16px;
+		font-weight: 600;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		transition: background 0.2s ease;
+	}
+
+	.experimental-toggle:hover {
+		background: linear-gradient(135deg, #5a6268 0%, #545b62 100%);
+	}
+
+	.experimental-content {
+		padding: 20px;
+		background: var(--secondary-bg-color);
+	}
+
+	.experimental-header {
+		margin-bottom: 20px;
+	}
+
+	.experimental-description {
+		margin: 0;
+		padding: 12px;
+		background: rgba(255, 193, 7, 0.1);
+		border-left: 4px solid #ffc107;
+		border-radius: 4px;
+		font-size: 14px;
+		color: var(--text-color);
+	}
+
+	.experimental-feature {
+		padding: 20px;
+		margin-bottom: 16px;
+		background: var(--bg-color);
+		border: 2px solid var(--border-color);
+		border-radius: 8px;
+	}
+
+	.experimental-feature:last-child {
+		margin-bottom: 0;
+	}
+
+	.experimental-feature h3 {
+		margin: 0 0 10px 0;
+		font-size: 18px;
+		color: var(--text-color);
+	}
+
+	.feature-description {
+		margin: 0 0 15px 0;
+		font-size: 14px;
+		color: var(--text-muted);
+		line-height: 1.5;
+	}
+
+	.btn-experimental {
+		padding: 10px 20px;
+		background: #007bff;
+		color: white;
+		border: none;
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 15px;
+		font-weight: 600;
+		transition: background 0.2s;
+	}
+
+	.btn-experimental:hover:not(:disabled) {
+		background: #0056b3;
+	}
+
+	.btn-experimental:disabled {
+		background: #6c757d;
+		cursor: not-allowed;
+		opacity: 0.6;
+	}
+
+	.experimental-disabled {
+		opacity: 0.7;
+	}
+
+	:global(.dark-mode) .experimental-section {
+		border-color: #545b62;
+	}
+
+	:global(.dark-mode) .experimental-content {
+		background: #2c3e50;
+	}
+
+	:global(.dark-mode) .experimental-feature {
+		background: #34495e;
+		border-color: #545b62;
 	}
 
 	.warning-icon {
