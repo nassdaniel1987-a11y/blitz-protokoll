@@ -145,6 +145,11 @@
 	// ADMIN: Experimentelle Features
 	let isAdmin = false;
 	let showExperimentalSection = false;
+	let showPersonPicker = false;
+	let personPickerSlot = null;
+	let personPickerRaum = null;
+	let personPickerSelectedPersonen = [];
+	let personPickerSearchQuery = '';
 
 	// CHANGELOG: Änderungshistorie
 	let showChangelog = false;
@@ -625,6 +630,56 @@
 		toast.show('✓ Daten von gestern kopiert!', 'success');
 	}
 
+	// EXPERIMENTAL: Person Picker für Zellen
+	function openPersonPicker(slot, raum) {
+		personPickerSlot = slot;
+		personPickerRaum = raum;
+
+		// Lade aktuell zugewiesene Personen
+		const currentValue = formData.planung[slot]?.[raum] || '';
+		const currentPersonen = currentValue
+			.split(',')
+			.map(p => p.trim())
+			.filter(p => p);
+
+		personPickerSelectedPersonen = [...currentPersonen];
+		personPickerSearchQuery = '';
+		showPersonPicker = true;
+	}
+
+	function togglePersonInPicker(person) {
+		const index = personPickerSelectedPersonen.indexOf(person);
+		if (index > -1) {
+			// Person entfernen
+			personPickerSelectedPersonen = personPickerSelectedPersonen.filter(p => p !== person);
+		} else {
+			// Person hinzufügen
+			personPickerSelectedPersonen = [...personPickerSelectedPersonen, person];
+		}
+	}
+
+	function applyPersonPicker() {
+		if (personPickerSlot && personPickerRaum) {
+			// Aktualisiere die Zelle mit den ausgewählten Personen
+			formData.planung[personPickerSlot][personPickerRaum] = personPickerSelectedPersonen.join(', ');
+			formData = formData; // Trigger reactivity
+
+			// Auto-save
+			saveProtokollSilent();
+		}
+
+		// Schließe Modal
+		closePersonPicker();
+	}
+
+	function closePersonPicker() {
+		showPersonPicker = false;
+		personPickerSlot = null;
+		personPickerRaum = null;
+		personPickerSelectedPersonen = [];
+		personPickerSearchQuery = '';
+	}
+
 	async function loadMessageCount() {
 		const nachrichten = await getNachrichten();
 		messageCount = nachrichten.length;
@@ -790,6 +845,94 @@
 	on:close={() => showAnwesenheitModal = false}
 />
 
+<!-- EXPERIMENTAL: Person Picker Modal für Zellen -->
+{#if showPersonPicker}
+	<div class="modal-overlay" on:click={closePersonPicker}>
+		<div class="modal-content person-picker-modal" on:click|stopPropagation>
+			<div class="modal-header">
+				<h2>👥 Personen zuweisen</h2>
+				<button class="close-btn" on:click={closePersonPicker}>✕</button>
+			</div>
+
+			<div class="modal-subheader">
+				<strong>{raumLabels[personPickerRaum] || personPickerRaum}</strong>
+				<span class="separator">•</span>
+				<strong>{personPickerSlot}</strong>
+			</div>
+
+			<div class="modal-body">
+				<!-- Suchfeld -->
+				<div class="search-box">
+					<input
+						type="text"
+						placeholder="🔍 Person suchen..."
+						bind:value={personPickerSearchQuery}
+						class="search-input"
+					/>
+				</div>
+
+				<!-- Personen-Liste -->
+				<div class="person-picker-list">
+					{#each allePersonen.filter(p => p.toLowerCase().includes(personPickerSearchQuery.toLowerCase())) as person}
+						<button
+							type="button"
+							class="person-picker-item"
+							class:selected={personPickerSelectedPersonen.includes(person)}
+							on:click={() => togglePersonInPicker(person)}
+						>
+							<span class="checkbox">
+								{personPickerSelectedPersonen.includes(person) ? '☑' : '☐'}
+							</span>
+							<span class="person-name">{person}</span>
+						</button>
+					{/each}
+				</div>
+
+				<!-- Aktuelle Auswahl -->
+				<div class="current-selection">
+					<strong>Ausgewählt ({personPickerSelectedPersonen.length}):</strong>
+					<div class="selected-chips">
+						{#if personPickerSelectedPersonen.length === 0}
+							<span class="empty-hint">Keine Personen ausgewählt</span>
+						{:else}
+							{#each personPickerSelectedPersonen as person}
+								<span class="chip">
+									{person}
+									<button
+										type="button"
+										class="chip-remove"
+										on:click={() => togglePersonInPicker(person)}
+									>
+										✕
+									</button>
+								</span>
+							{/each}
+						{/if}
+					</div>
+				</div>
+
+				<!-- Aktionen -->
+				<div class="modal-actions">
+					<button
+						type="button"
+						class="btn-cancel"
+						on:click={closePersonPicker}
+					>
+						Abbrechen
+					</button>
+					<button
+						type="button"
+						class="btn-save"
+						on:click={applyPersonPicker}
+					>
+						✓ Übernehmen
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <!-- Vorlage Speichern Modal -->
 {#if showSaveTemplateModal}
 	<div class="modal-overlay" on:click={() => showSaveTemplateModal = false}>
@@ -909,20 +1052,51 @@
 							</button>
 						</div>
 
-						<!-- Feature 2: Tap-Zelle Person Picker (coming soon) -->
-						<div class="experimental-feature experimental-disabled">
-							<h3>👆 Tap-Zelle → Person auswählen</h3>
+						<!-- Feature 2: Tap-Zelle Person Picker -->
+						<div class="experimental-feature">
+							<h3>👆 Tap-Zelle → Person auswählen (Tablet-optimiert)</h3>
 							<p class="feature-description">
-								Alternative zur Paint-Mode: Tippe auf eine Zelle und wähle direkt aus einer Liste
-								die Personen aus. Kein Hin-und-Her-Scrollen mehr nötig.
+								Alternative zur Paint-Mode: Tippe auf eine Zelle in der Tabelle unten und wähle direkt aus einer Liste
+								die Personen aus. Kein Hin-und-Her-Scrollen mehr nötig. Perfekt für Tablets!
 							</p>
-							<button
-								type="button"
-								class="btn-experimental"
-								disabled
-							>
-								🚧 In Entwicklung
-							</button>
+
+							<!-- Experimentelle Planungs-Tabelle -->
+							<div class="experimental-table-container">
+								<h4>📊 Experimentelle Planungs-Matrix (Tap-Modus)</h4>
+								<p class="experimental-table-hint">
+									👇 Tippe auf eine Zelle, um Personen zuzuweisen
+								</p>
+								<div class="table-wrapper">
+									<table class="planning-table experimental-planning-table">
+										<thead>
+											<tr>
+												<th class="time-column">Zeitslot</th>
+												{#each raeume as raum}
+													<th>{raumLabels[raum] || raum}</th>
+												{/each}
+											</tr>
+										</thead>
+										<tbody>
+											{#each zeitslots as slot}
+												<tr>
+													<td class="time-cell">{slot}</td>
+													{#each raeume as raum}
+														<td class="matrix-cell experimental-cell">
+															<button
+																type="button"
+																class="cell-tap-btn"
+																on:click={() => openPersonPicker(slot, raum)}
+															>
+																{formData.planung[slot]?.[raum] || 'Tippen zum Zuweisen'}
+															</button>
+														</td>
+													{/each}
+												</tr>
+											{/each}
+										</tbody>
+									</table>
+								</div>
+							</div>
 						</div>
 					</div>
 				{/if}
@@ -2215,6 +2389,239 @@
 	:global(.dark-mode) .experimental-feature {
 		background: #34495e;
 		border-color: #545b62;
+	}
+
+	/* EXPERIMENTAL: Table and Person Picker Styles */
+	.experimental-table-container {
+		margin-top: 20px;
+	}
+
+	.experimental-table-container h4 {
+		margin: 0 0 8px 0;
+		font-size: 16px;
+		color: var(--text-color);
+	}
+
+	.experimental-table-hint {
+		margin: 0 0 12px 0;
+		font-size: 14px;
+		color: var(--text-muted);
+		font-style: italic;
+	}
+
+	.experimental-planning-table {
+		width: 100%;
+		border-collapse: collapse;
+		background: var(--bg-color);
+	}
+
+	.experimental-cell {
+		padding: 0 !important;
+	}
+
+	.cell-tap-btn {
+		width: 100%;
+		min-height: 60px;
+		padding: 12px;
+		background: var(--bg-color);
+		border: 2px solid var(--border-color);
+		color: var(--text-color);
+		cursor: pointer;
+		font-size: 14px;
+		text-align: left;
+		transition: all 0.2s;
+		border-radius: 4px;
+	}
+
+	.cell-tap-btn:hover {
+		background: var(--hover-bg-color);
+		border-color: var(--primary-color);
+		transform: scale(1.02);
+	}
+
+	.cell-tap-btn:active {
+		transform: scale(0.98);
+	}
+
+	/* Person Picker Modal */
+	.person-picker-modal {
+		max-width: 500px;
+		width: 90%;
+		max-height: 80vh;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.modal-subheader {
+		padding: 12px 24px;
+		background: var(--secondary-bg-color);
+		border-bottom: 1px solid var(--border-color);
+		font-size: 14px;
+		color: var(--text-muted);
+	}
+
+	.modal-subheader .separator {
+		margin: 0 8px;
+	}
+
+	.search-box {
+		margin-bottom: 16px;
+	}
+
+	.search-input {
+		width: 100%;
+		padding: 12px 16px;
+		border: 2px solid var(--border-color);
+		border-radius: 8px;
+		font-size: 16px;
+		background: var(--bg-color);
+		color: var(--text-color);
+	}
+
+	.search-input:focus {
+		outline: none;
+		border-color: var(--primary-color);
+	}
+
+	.person-picker-list {
+		max-height: 300px;
+		overflow-y: auto;
+		border: 1px solid var(--border-color);
+		border-radius: 8px;
+		margin-bottom: 16px;
+	}
+
+	.person-picker-item {
+		width: 100%;
+		padding: 14px 16px;
+		background: var(--bg-color);
+		border: none;
+		border-bottom: 1px solid var(--border-color);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		font-size: 16px;
+		transition: background 0.2s;
+		text-align: left;
+		color: var(--text-color);
+	}
+
+	.person-picker-item:last-child {
+		border-bottom: none;
+	}
+
+	.person-picker-item:hover {
+		background: var(--hover-bg-color);
+	}
+
+	.person-picker-item.selected {
+		background: rgba(0, 123, 255, 0.1);
+		font-weight: 600;
+	}
+
+	.person-picker-item .checkbox {
+		font-size: 20px;
+		color: var(--primary-color);
+	}
+
+	.person-picker-item .person-name {
+		flex: 1;
+	}
+
+	.current-selection {
+		padding: 12px;
+		background: var(--secondary-bg-color);
+		border-radius: 8px;
+		margin-bottom: 16px;
+	}
+
+	.current-selection strong {
+		display: block;
+		margin-bottom: 8px;
+		font-size: 14px;
+		color: var(--text-color);
+	}
+
+	.selected-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		min-height: 32px;
+		align-items: center;
+	}
+
+	.empty-hint {
+		color: var(--text-muted);
+		font-size: 14px;
+		font-style: italic;
+	}
+
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 10px;
+		background: var(--primary-color);
+		color: white;
+		border-radius: 16px;
+		font-size: 14px;
+		font-weight: 500;
+	}
+
+	.chip-remove {
+		padding: 0;
+		width: 18px;
+		height: 18px;
+		background: rgba(255, 255, 255, 0.3);
+		border: none;
+		border-radius: 50%;
+		cursor: pointer;
+		font-size: 12px;
+		color: white;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: background 0.2s;
+	}
+
+	.chip-remove:hover {
+		background: rgba(255, 255, 255, 0.5);
+	}
+
+	.modal-actions {
+		display: flex;
+		gap: 12px;
+		justify-content: flex-end;
+	}
+
+	.modal-actions .btn-cancel,
+	.modal-actions .btn-save {
+		padding: 12px 24px;
+		border: none;
+		border-radius: 6px;
+		font-size: 16px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background 0.2s;
+	}
+
+	.modal-actions .btn-cancel {
+		background: #6c757d;
+		color: white;
+	}
+
+	.modal-actions .btn-cancel:hover {
+		background: #5a6268;
+	}
+
+	.modal-actions .btn-save {
+		background: var(--primary-color);
+		color: white;
+	}
+
+	.modal-actions .btn-save:hover {
+		background: var(--primary-color-dark);
 	}
 
 	.warning-icon {
