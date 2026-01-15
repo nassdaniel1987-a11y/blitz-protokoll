@@ -26,6 +26,17 @@ export async function getPersonen() {
  * @returns {Promise<boolean>} Erfolg
  */
 export async function savePersonen(personen) {
+	// Lade alte Personenliste für Vergleich
+	const oldPersonen = await getPersonen();
+
+	// Finde gelöschte Personen
+	const deletedPersons = oldPersonen.filter(p => !personen.includes(p));
+
+	if (deletedPersons.length > 0) {
+		console.log('Gelöschte Personen gefunden:', deletedPersons);
+		await cleanupDeletedPersonsFromVorlagen(deletedPersons);
+	}
+
 	const { error } = await supabase
 		.from('einstellungen')
 		.upsert({
@@ -42,6 +53,90 @@ export async function savePersonen(personen) {
 	}
 
 	return true;
+}
+
+/**
+ * Entfernt gelöschte Personen aus allen Vorlagen
+ * @param {Array<string>} deletedPersons - Liste der gelöschten Personen
+ */
+async function cleanupDeletedPersonsFromVorlagen(deletedPersons) {
+	try {
+		const vorlagen = await getVorlagen();
+
+		const { updatedVorlagen, changed } = removePersonsFromTemplates(vorlagen, deletedPersons);
+
+		if (changed) {
+			console.log('Bereinige Vorlagen von gelöschten Personen...');
+			await saveVorlagen(updatedVorlagen);
+			console.log('Vorlagen erfolgreich bereinigt.');
+		}
+	} catch (error) {
+		console.error('Fehler beim Bereinigen der Vorlagen:', error);
+	}
+}
+
+/**
+ * Reine Funktion zum Entfernen von Personen aus Vorlagen (für Tests exportiert)
+ * @param {Array} vorlagen - Liste der Vorlagen
+ * @param {Array<string>} deletedPersons - Liste der zu löschenden Personen
+ * @returns {object} { updatedVorlagen, changed }
+ */
+export function removePersonsFromTemplates(vorlagen, deletedPersons) {
+	let changed = false;
+
+	const updatedVorlagen = vorlagen.map(vorlage => {
+		let vorlageChanged = false;
+		// Deep copy von inhalt
+		const inhalt = JSON.parse(JSON.stringify(vorlage.inhalt));
+
+		// Helper function to remove persons from comma-separated string
+		const removePersonsFromString = (str) => {
+			if (!str) return str;
+			let parts = str.split(',').map(s => s.trim()).filter(s => s);
+			const originalLength = parts.length;
+			parts = parts.filter(p => !deletedPersons.includes(p));
+			if (parts.length !== originalLength) {
+				vorlageChanged = true;
+				changed = true;
+			}
+			return parts.join(', ');
+		};
+
+		// 1. Anwesenheit
+		if (inhalt.anwesenheit) {
+			inhalt.anwesenheit = removePersonsFromString(inhalt.anwesenheit);
+		}
+
+		// 2. Abwesend
+		if (inhalt.abwesend) {
+			inhalt.abwesend = removePersonsFromString(inhalt.abwesend);
+		}
+
+		// 3. Wer geht essen
+		if (inhalt.wer_geht_essen) {
+			inhalt.wer_geht_essen = removePersonsFromString(inhalt.wer_geht_essen);
+		}
+
+		// 4. Planung (Raumzuweisungen)
+		if (inhalt.planung) {
+			Object.keys(inhalt.planung).forEach(slot => {
+				Object.keys(inhalt.planung[slot]).forEach(raum => {
+					const oldVal = inhalt.planung[slot][raum];
+					const newVal = removePersonsFromString(oldVal);
+					if (oldVal !== newVal) {
+						inhalt.planung[slot][raum] = newVal;
+					}
+				});
+			});
+		}
+
+		if (vorlageChanged) {
+			return { ...vorlage, inhalt };
+		}
+		return vorlage;
+	});
+
+	return { updatedVorlagen, changed };
 }
 
 /**
