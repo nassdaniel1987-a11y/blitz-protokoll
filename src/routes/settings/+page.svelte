@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { getPersonen, savePersonen, getRaeume, saveRaeume, getVorlagen, saveVorlagen } from '$lib/einstellungenService';
-	import { isCurrentUserAdmin, getAllUsers, createUser, removeMustChangePassword, setUserAdminStatus, assignPersonToUser, deleteUser } from '$lib/userManagementService';
+	import { isCurrentUserAdmin, getAllUsers, createUser, removeMustChangePassword, setUserAdminStatus, assignPersonToUser, deleteUser, resetUserPassword } from '$lib/userManagementService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
 
@@ -23,6 +23,12 @@
 	let newUsername = '';
 	let newUserPassword = '';
 	let creatingUser = false;
+
+	// Passwort Reset State
+	let showResetPasswordModal = false;
+	let resetUser = null;
+	let resetPasswordValue = '';
+	let resettingPassword = false;
 
 	// Collapse/Expand States für Bereiche
 	let expandedSections = {
@@ -146,6 +152,43 @@
 	}
 
 	// USER-MANAGEMENT Funktionen (nur für Admins)
+
+	function openResetPasswordModal(user) {
+		resetUser = user;
+		resetPasswordValue = '';
+		showResetPasswordModal = true;
+	}
+
+	async function handleResetPassword() {
+		if (!resetPasswordValue.trim()) {
+			toast.show('Bitte ein neues Passwort eingeben!', 'error');
+			return;
+		}
+
+		if (resetPasswordValue.length < 8) {
+			toast.show('Passwort muss mindestens 8 Zeichen lang sein!', 'error');
+			return;
+		}
+
+		if (!resetUser) return;
+
+		resettingPassword = true;
+		const result = await resetUserPassword(resetUser.id, resetPasswordValue);
+
+		if (result.success) {
+			toast.show(`Passwort für "${getUsernameFromEmail(resetUser.email)}" erfolgreich zurückgesetzt!`, 'success');
+			// User-Liste neu laden (um Metadata Updates zu sehen)
+			users = await getAllUsers();
+			// Modal schließen
+			showResetPasswordModal = false;
+			resetUser = null;
+			resetPasswordValue = '';
+		} else {
+			toast.show(`Fehler beim Zurücksetzen: ${result.error}`, 'error');
+		}
+
+		resettingPassword = false;
+	}
 
 	async function handleCreateUser() {
 		if (!newUsername.trim() || !newUserPassword.trim()) {
@@ -342,6 +385,13 @@
 										🔓 Pflicht entfernen
 									</button>
 								{/if}
+								<button
+									on:click={() => openResetPasswordModal(user)}
+									class="action-btn"
+									title="Passwort zurücksetzen"
+								>
+									🔑 Passwort ändern
+								</button>
 								<button
 									on:click={() => handleToggleAdmin(user)}
 									class="action-btn"
@@ -592,6 +642,65 @@
 					disabled={creatingUser}
 				>
 					{creatingUser ? 'Erstelle...' : 'Benutzer erstellen'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Modal: Passwort zurücksetzen -->
+{#if showResetPasswordModal}
+	<div class="modal-overlay" on:click={() => showResetPasswordModal = false}>
+		<div class="modal-content" on:click|stopPropagation>
+			<div class="modal-header">
+				<h2>Passwort zurücksetzen</h2>
+				<button
+					on:click={() => showResetPasswordModal = false}
+					class="modal-close"
+					title="Schließen"
+				>
+					✕
+				</button>
+			</div>
+
+			<div class="modal-body">
+				<p style="margin-bottom: 20px; color: var(--text-primary);">
+					Neues Passwort für <strong>{resetUser ? getUsernameFromEmail(resetUser.email) : 'User'}</strong> vergeben:
+				</p>
+
+				<div class="form-group">
+					<label for="reset-password">
+						Neues Passwort
+						<span class="hint">(mind. 8 Zeichen)</span>
+					</label>
+					<input
+						type="password"
+						id="reset-password"
+						bind:value={resetPasswordValue}
+						placeholder="Neues Passwort eingeben"
+						disabled={resettingPassword}
+					/>
+				</div>
+
+				<p class="modal-info">
+					ℹ️ Der User muss beim nächsten Login das Passwort erneut ändern.
+				</p>
+			</div>
+
+			<div class="modal-footer">
+				<button
+					on:click={() => showResetPasswordModal = false}
+					class="btn-secondary"
+					disabled={resettingPassword}
+				>
+					Abbrechen
+				</button>
+				<button
+					on:click={handleResetPassword}
+					class="btn-primary"
+					disabled={resettingPassword}
+				>
+					{resettingPassword ? 'Speichere...' : 'Passwort setzen'}
 				</button>
 			</div>
 		</div>
