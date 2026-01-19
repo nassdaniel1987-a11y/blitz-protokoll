@@ -154,3 +154,41 @@ export async function deleteUser(userId) {
 		return { success: false, error: error.message };
 	}
 }
+
+/**
+ * Setzt das Passwort eines Users zurück (nur für Admins)
+ * @param {string} userId - User-ID
+ * @param {string} newPassword - Neues Passwort
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function resetUserPassword(userId, newPassword) {
+	try {
+		// Supabase URL ermitteln
+		const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || supabase.supabaseUrl;
+
+		// Edge Function aufrufen
+		const { data: sessionData } = await supabase.auth.getSession();
+		const token = sessionData.session?.access_token;
+
+		if (!token) {
+			return { success: false, error: 'Nicht authentifiziert' };
+		}
+
+		// Hier rufen wir die neue Function 'reset-password' auf
+		const response = await fetch(`${supabaseUrl}/functions/v1/reset-password`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${token}`
+			},
+			body: JSON.stringify({ userId, newPassword })
+		});
+
+		const result = await response.json();
+		return result;
+
+	} catch (error) {
+		console.error('Fehler beim Zurücksetzen des Passworts:', error);
+		return { success: false, error: error.message };
+	}
+}
