@@ -92,6 +92,10 @@ export function compareProtocols(oldData, newData, zeitslots, raeume) {
 		{ key: 'leitung_im_haus', name: 'Leitung im Haus' },
 		{ key: 'spaetdienst', name: 'Spätdienst' },
 		{ key: 'fruehdienst_naechster_tag', name: 'Frühdienst (nächster Tag)' },
+		{ key: 'beobachtung_kinder_stufe_1', name: 'Beobachtung Kinder - Stufe 1' },
+		{ key: 'beobachtung_kinder_stufe_2', name: 'Beobachtung Kinder - Stufe 2' },
+		{ key: 'beobachtung_kinder_stufe_3', name: 'Beobachtung Kinder - Stufe 3' },
+		{ key: 'beobachtung_kinder_stufe_4', name: 'Beobachtung Kinder - Stufe 4' },
 		{ key: 'sonstiges', name: 'Sonstiges' }
 	];
 
