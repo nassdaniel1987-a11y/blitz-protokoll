@@ -462,6 +462,37 @@
 						<strong>Frühdienst (nächster Tag):</strong>
 						<span>{protokoll.inhalt.fruehdienst_naechster_tag || '-'}</span>
 					</div>
+					{#if protokoll.inhalt.beobachtung_kinder_stufe_1 || protokoll.inhalt.beobachtung_kinder_stufe_2 || protokoll.inhalt.beobachtung_kinder_stufe_3 || protokoll.inhalt.beobachtung_kinder_stufe_4}
+						<div class="info-item full-width beobachtung-section">
+							<strong>Beobachtung Kinder:</strong>
+							<div class="beobachtung-grid">
+								{#if protokoll.inhalt.beobachtung_kinder_stufe_1}
+									<div class="beobachtung-item">
+										<span class="stufe-label">Stufe 1:</span>
+										<span>{protokoll.inhalt.beobachtung_kinder_stufe_1}</span>
+									</div>
+								{/if}
+								{#if protokoll.inhalt.beobachtung_kinder_stufe_2}
+									<div class="beobachtung-item">
+										<span class="stufe-label">Stufe 2:</span>
+										<span>{protokoll.inhalt.beobachtung_kinder_stufe_2}</span>
+									</div>
+								{/if}
+								{#if protokoll.inhalt.beobachtung_kinder_stufe_3}
+									<div class="beobachtung-item">
+										<span class="stufe-label">Stufe 3:</span>
+										<span>{protokoll.inhalt.beobachtung_kinder_stufe_3}</span>
+									</div>
+								{/if}
+								{#if protokoll.inhalt.beobachtung_kinder_stufe_4}
+									<div class="beobachtung-item">
+										<span class="stufe-label">Stufe 4:</span>
+										<span>{protokoll.inhalt.beobachtung_kinder_stufe_4}</span>
+									</div>
+								{/if}
+							</div>
+						</div>
+					{/if}
 					{#if protokoll.inhalt.sonstiges}
 						<div class="info-item full-width">
 							<strong>Sonstiges:</strong>
@@ -935,6 +966,39 @@
 	.info-item span {
 		color: var(--text-primary);
 		font-size: 1rem;
+	}
+
+	/* Beobachtung Kinder */
+	.beobachtung-section {
+		border: 1px solid var(--accent-color);
+		border-radius: 8px;
+		padding: 12px;
+		background: var(--bg-primary);
+	}
+
+	.beobachtung-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 10px;
+		margin-top: 8px;
+	}
+
+	.beobachtung-item {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.stufe-label {
+		font-weight: 500;
+		color: var(--accent-color);
+		font-size: 0.85rem;
+	}
+
+	@media (max-width: 600px) {
+		.beobachtung-grid {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	/* Tabelle */
