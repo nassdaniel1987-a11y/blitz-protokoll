@@ -137,6 +137,10 @@ export function getEmptyProtokoll() {
 		leitung_im_haus: '',
 		spaetdienst: '',
 		fruehdienst_naechster_tag: '',
+		beobachtung_kinder_stufe_1: '',
+		beobachtung_kinder_stufe_2: '',
+		beobachtung_kinder_stufe_3: '',
+		beobachtung_kinder_stufe_4: '',
 		sonstiges: '',
 		planung: {
 			'12:25-13:10': {

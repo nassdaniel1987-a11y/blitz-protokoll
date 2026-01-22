@@ -1252,6 +1252,53 @@
 					/>
 				</div>
 
+				<!-- Beobachtung Kinder -->
+				<div class="form-group beobachtung-kinder-section">
+					<label>Beobachtung Kinder</label>
+					<div class="beobachtung-kinder-grid">
+						<div class="beobachtung-item">
+							<label for="beobachtung_stufe_1">Stufe 1</label>
+							<textarea
+								id="beobachtung_stufe_1"
+								bind:value={formData.beobachtung_kinder_stufe_1}
+								rows="2"
+								placeholder="Beobachtungen Stufe 1..."
+								on:input={saveProtokollSilent}
+							></textarea>
+						</div>
+						<div class="beobachtung-item">
+							<label for="beobachtung_stufe_2">Stufe 2</label>
+							<textarea
+								id="beobachtung_stufe_2"
+								bind:value={formData.beobachtung_kinder_stufe_2}
+								rows="2"
+								placeholder="Beobachtungen Stufe 2..."
+								on:input={saveProtokollSilent}
+							></textarea>
+						</div>
+						<div class="beobachtung-item">
+							<label for="beobachtung_stufe_3">Stufe 3</label>
+							<textarea
+								id="beobachtung_stufe_3"
+								bind:value={formData.beobachtung_kinder_stufe_3}
+								rows="2"
+								placeholder="Beobachtungen Stufe 3..."
+								on:input={saveProtokollSilent}
+							></textarea>
+						</div>
+						<div class="beobachtung-item">
+							<label for="beobachtung_stufe_4">Stufe 4</label>
+							<textarea
+								id="beobachtung_stufe_4"
+								bind:value={formData.beobachtung_kinder_stufe_4}
+								rows="2"
+								placeholder="Beobachtungen Stufe 4..."
+								on:input={saveProtokollSilent}
+							></textarea>
+						</div>
+					</div>
+				</div>
+
 				<div class="form-group">
 					<label for="sonstiges">Sonstiges</label>
 					<textarea
@@ -3140,6 +3187,63 @@
 
 		.vorlage-apply-btn {
 			width: 100%;
+		}
+	}
+
+	/* Beobachtung Kinder Styles */
+	.beobachtung-kinder-section {
+		border: 2px solid var(--accent-color);
+		border-radius: 8px;
+		padding: 15px;
+		margin-top: 20px;
+		background: var(--bg-primary);
+	}
+
+	.beobachtung-kinder-section > label {
+		font-size: 1.1rem;
+		font-weight: 600;
+		color: var(--accent-color);
+		margin-bottom: 15px;
+	}
+
+	.beobachtung-kinder-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 15px;
+	}
+
+	.beobachtung-item {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.beobachtung-item label {
+		font-size: 0.9rem;
+		font-weight: 500;
+		margin-bottom: 5px;
+		color: var(--text-secondary);
+	}
+
+	.beobachtung-item textarea {
+		width: 100%;
+		padding: 10px;
+		border: 1px solid var(--border-color);
+		border-radius: 6px;
+		font-size: 0.95rem;
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+		resize: vertical;
+	}
+
+	.beobachtung-item textarea:focus {
+		outline: none;
+		border-color: var(--accent-color);
+		box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
+	}
+
+	@media (max-width: 600px) {
+		.beobachtung-kinder-grid {
+			grid-template-columns: 1fr;
 		}
 	}
 </style>
