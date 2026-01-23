@@ -138,6 +138,30 @@
 		goto(`/vorlagen/edit?id=${id}`);
 	}
 
+	async function copyVorlage(index) {
+		const vorlage = vorlagen[index];
+
+		// Deep-Copy der Vorlage erstellen
+		const kopie = JSON.parse(JSON.stringify(vorlage));
+
+		// Neue UUID generieren
+		kopie.id = crypto.randomUUID();
+
+		// Namen anpassen
+		kopie.name = `${vorlage.name} (Kopie)`;
+
+		// Zur Liste hinzufügen
+		vorlagen = [...vorlagen, kopie];
+
+		// Speichern
+		const success = await saveVorlagen(vorlagen);
+		if (success) {
+			toast.show(`Vorlage "${vorlage.name}" wurde kopiert!`, 'success');
+		} else {
+			toast.show('Fehler beim Kopieren der Vorlage!', 'error');
+		}
+	}
+
 	async function handleSave() {
 		saving = true;
 		const successPersonen = await savePersonen(personen);
@@ -548,6 +572,14 @@
 									title="Vorlage bearbeiten"
 								>
 									✎
+								</button>
+								<button
+									type="button"
+									on:click={() => copyVorlage(index)}
+									class="copy-btn"
+									title="Vorlage kopieren"
+								>
+									⧉
 								</button>
 								<button
 									type="button"
@@ -988,6 +1020,21 @@
 
 	.edit-btn:hover {
 		background: var(--accent-hover);
+	}
+
+	.copy-btn {
+		padding: 4px 10px;
+		background: #17a2b8;
+		color: white;
+		border: none;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 16px;
+		line-height: 1;
+	}
+
+	.copy-btn:hover {
+		background: #138496;
 	}
 
 	.add-vorlage {
