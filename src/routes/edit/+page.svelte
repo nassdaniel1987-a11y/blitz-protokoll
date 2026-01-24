@@ -1137,20 +1137,16 @@
 						<span>oder</span>
 					</div>
 					<div class="vorlage-auswahl">
-						<select bind:value={selectedVorlageId} class="vorlage-select">
+						<select
+							bind:value={selectedVorlageId}
+							on:change={applyVorlage}
+							class="vorlage-select"
+						>
 							<option value="">-- Vorlage auswählen --</option>
 							{#each vorlagen as vorlage}
 								<option value={vorlage.id}>{vorlage.name}</option>
 							{/each}
 						</select>
-						<button
-							type="button"
-							on:click={applyVorlage}
-							disabled={!selectedVorlageId}
-							class="vorlage-apply-btn"
-						>
-							Vorlage anwenden
-						</button>
 					</div>
 				{/if}
 			</section>
@@ -2083,27 +2079,6 @@
 	.vorlage-select:focus {
 		outline: none;
 		border-color: var(--accent-color);
-	}
-
-	.vorlage-apply-btn {
-		padding: 12px 24px;
-		background: var(--accent-color);
-		color: white;
-		border: none;
-		border-radius: 8px;
-		cursor: pointer;
-		font-size: 16px;
-		font-weight: 600;
-		white-space: nowrap;
-	}
-
-	.vorlage-apply-btn:hover:not(:disabled) {
-		background: var(--accent-hover);
-	}
-
-	.vorlage-apply-btn:disabled {
-		background: #ccc;
-		cursor: not-allowed;
 	}
 
 	.quick-action-group {
@@ -3183,10 +3158,6 @@
 
 		.vorlage-auswahl {
 			flex-direction: column;
-		}
-
-		.vorlage-apply-btn {
-			width: 100%;
 		}
 	}
 
