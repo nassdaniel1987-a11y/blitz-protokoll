@@ -2,7 +2,7 @@
 	import { supabase } from '$lib/supabaseClient';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { getPersonen, savePersonen, getRaeume, saveRaeume, getVorlagen, saveVorlagen } from '$lib/einstellungenService';
+	import { getPersonen, savePersonen, getRaeume, saveRaeume, getVorlagen, saveVorlagen, renamePersonEverywhere } from '$lib/einstellungenService';
 	import { isCurrentUserAdmin, getAllUsers, createUser, removeMustChangePassword, setUserAdminStatus, assignPersonToUser, deleteUser, resetUserPassword } from '$lib/userManagementService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
@@ -29,6 +29,12 @@
 	let resetUser = null;
 	let resetPasswordValue = '';
 	let resettingPassword = false;
+
+	// Person Rename State
+	let showRenamePersonModal = false;
+	let renamePersonIndex = null;
+	let renamePersonNewName = '';
+	let renamingPerson = false;
 
 	// Collapse/Expand States für Bereiche
 	let expandedSections = {
@@ -71,6 +77,52 @@
 
 	function removePerson(index) {
 		personen = personen.filter((_, i) => i !== index);
+	}
+
+	function openRenamePersonModal(index) {
+		renamePersonIndex = index;
+		renamePersonNewName = personen[index];
+		showRenamePersonModal = true;
+	}
+
+	async function handleRenamePerson() {
+		if (!renamePersonNewName.trim()) {
+			toast.show('Bitte einen Namen eingeben!', 'error');
+			return;
+		}
+
+		const newName = renamePersonNewName.trim();
+		const oldName = personen[renamePersonIndex];
+
+		if (newName === oldName) {
+			showRenamePersonModal = false;
+			return;
+		}
+
+		// Prüfen ob Name bereits existiert
+		if (personen.some((p, i) => i !== renamePersonIndex && p === newName)) {
+			toast.show('Dieser Name existiert bereits!', 'error');
+			return;
+		}
+
+		renamingPerson = true;
+		const { success, updatedPersonen, stats } = await renamePersonEverywhere(personen, renamePersonIndex, newName);
+
+		if (success) {
+			personen = updatedPersonen;
+			let message = `"${oldName}" wurde zu "${newName}" umbenannt!`;
+			if (stats.vorlagen > 0 || stats.protokolle > 0) {
+				message += ` (${stats.vorlagen} Vorlagen, ${stats.protokolle} Protokolle aktualisiert)`;
+			}
+			toast.show(message, 'success');
+			showRenamePersonModal = false;
+			renamePersonIndex = null;
+			renamePersonNewName = '';
+		} else {
+			toast.show('Fehler beim Umbenennen!', 'error');
+		}
+
+		renamingPerson = false;
 	}
 
 	function addRaum() {
@@ -453,14 +505,24 @@
 				{#each personen as person, index}
 					<div class="person-item">
 						<span class="person-name">{person}</span>
-						<button 
-							type="button" 
-							on:click={() => removePerson(index)} 
-							class="remove-btn"
-							title="Person entfernen"
-						>
-							✕
-						</button>
+						<div class="person-actions">
+							<button
+								type="button"
+								on:click={() => openRenamePersonModal(index)}
+								class="rename-btn"
+								title="Person umbenennen"
+							>
+								✎
+							</button>
+							<button
+								type="button"
+								on:click={() => removePerson(index)}
+								class="remove-btn"
+								title="Person entfernen"
+							>
+								✕
+							</button>
+						</div>
 					</div>
 				{/each}
 			</div>
@@ -739,6 +801,65 @@
 	</div>
 {/if}
 
+<!-- Modal: Person umbenennen -->
+{#if showRenamePersonModal}
+	<div class="modal-overlay" on:click={() => showRenamePersonModal = false}>
+		<div class="modal-content" on:click|stopPropagation>
+			<div class="modal-header">
+				<h2>Person umbenennen</h2>
+				<button
+					on:click={() => showRenamePersonModal = false}
+					class="modal-close"
+					title="Schließen"
+				>
+					✕
+				</button>
+			</div>
+
+			<div class="modal-body">
+				<p style="margin-bottom: 20px; color: var(--text-primary);">
+					Aktueller Name: <strong>{renamePersonIndex !== null ? personen[renamePersonIndex] : ''}</strong>
+				</p>
+
+				<div class="form-group">
+					<label for="rename-person">
+						Neuer Name
+					</label>
+					<input
+						type="text"
+						id="rename-person"
+						bind:value={renamePersonNewName}
+						placeholder="Neuen Namen eingeben"
+						disabled={renamingPerson}
+						on:keydown={(e) => e.key === 'Enter' && handleRenamePerson()}
+					/>
+				</div>
+
+				<p class="modal-info">
+					Der Name wird in allen Vorlagen und bestehenden Protokollen aktualisiert.
+				</p>
+			</div>
+
+			<div class="modal-footer">
+				<button
+					on:click={() => showRenamePersonModal = false}
+					class="btn-secondary"
+					disabled={renamingPerson}
+				>
+					Abbrechen
+				</button>
+				<button
+					on:click={handleRenamePerson}
+					class="btn-primary"
+					disabled={renamingPerson}
+				>
+					{renamingPerson ? 'Speichere...' : 'Umbenennen'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <style>
 	.settings-container {
 		min-height: 100vh;
@@ -851,6 +972,27 @@
 	.person-name {
 		color: var(--text-primary);
 		font-size: 1rem;
+	}
+
+	.person-actions {
+		display: flex;
+		gap: 8px;
+		align-items: center;
+	}
+
+	.rename-btn {
+		padding: 4px 10px;
+		background: var(--accent-color);
+		color: white;
+		border: none;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 16px;
+		line-height: 1;
+	}
+
+	.rename-btn:hover {
+		background: var(--accent-hover);
 	}
 
 	.raum-actions {
