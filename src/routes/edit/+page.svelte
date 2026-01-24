@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/stores';
-	import { getProtokoll, saveProtokoll, getToday } from '$lib/protokollService';
+	import { getProtokoll, saveProtokoll, getToday, getBeobachtungKinderFromThursday } from '$lib/protokollService';
 	// NEU: getPersonen und getRaeume importieren
 	import { getPersonen, getRaeume, getVorlagen } from '$lib/einstellungenService';
 	import { getNachrichten } from '$lib/teamNachrichtenService';
@@ -61,6 +61,10 @@
 			leitung_im_haus: '',
 			spaetdienst: '',
 			fruehdienst_naechster_tag: '',
+			beobachtung_kinder_stufe_1: '',
+			beobachtung_kinder_stufe_2: '',
+			beobachtung_kinder_stufe_3: '',
+			beobachtung_kinder_stufe_4: '',
 			sonstiges: '',
 			planung
 		};
@@ -235,6 +239,15 @@
 			anwesenheitArray = [...allePersonen];
 			formData.anwesenheit = arrayToString(anwesenheitArray);
 			formData.abwesend = ''; // Niemand abwesend
+
+			// NEU: Beobachtung Kinder vom letzten Donnerstag übernehmen (wochenweise)
+			const beobachtungKinder = await getBeobachtungKinderFromThursday(currentDate);
+			if (beobachtungKinder) {
+				formData.beobachtung_kinder_stufe_1 = beobachtungKinder.beobachtung_kinder_stufe_1;
+				formData.beobachtung_kinder_stufe_2 = beobachtungKinder.beobachtung_kinder_stufe_2;
+				formData.beobachtung_kinder_stufe_3 = beobachtungKinder.beobachtung_kinder_stufe_3;
+				formData.beobachtung_kinder_stufe_4 = beobachtungKinder.beobachtung_kinder_stufe_4;
+			}
 
 			// CHANGELOG: Speichere Original-Daten (leer bei neuem Protokoll)
 			originalProtokollData = null;

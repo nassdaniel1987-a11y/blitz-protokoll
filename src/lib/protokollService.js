@@ -126,6 +126,61 @@ export function getToday() {
 }
 
 /**
+ * Hilfsfunktion: Berechne den letzten Donnerstag (oder heute, wenn heute Donnerstag ist)
+ * Die Woche geht von Donnerstag bis Mittwoch
+ * @param {string} dateStr - Datum im Format YYYY-MM-DD
+ * @returns {string} Datum des letzten Donnerstags im Format YYYY-MM-DD
+ */
+export function getLastThursday(dateStr) {
+	const date = new Date(dateStr + 'T12:00:00'); // Mittag um Timezone-Probleme zu vermeiden
+	const dayOfWeek = date.getDay(); // 0=Sonntag, 1=Montag, ..., 4=Donnerstag, 6=Samstag
+
+	// Berechne Tage zurück zum letzten Donnerstag
+	// Donnerstag = 4
+	let daysBack = (dayOfWeek - 4 + 7) % 7;
+
+	// Wenn heute Donnerstag ist, bleibe bei heute (daysBack = 0)
+	date.setDate(date.getDate() - daysBack);
+
+	return date.toISOString().split('T')[0];
+}
+
+/**
+ * Lade die "Beobachtung Kinder" Daten vom letzten Donnerstag
+ * Diese werden wochenweise (Donnerstag bis Mittwoch) übernommen
+ * @param {string} currentDate - Aktuelles Datum im Format YYYY-MM-DD
+ * @returns {Promise<Object|null>} Beobachtung Kinder Felder oder null
+ */
+export async function getBeobachtungKinderFromThursday(currentDate) {
+	const lastThursday = getLastThursday(currentDate);
+
+	// Wenn das aktuelle Datum der Donnerstag ist, keine Übernahme nötig
+	// (das wäre ja das gleiche Protokoll)
+	if (lastThursday === currentDate) {
+		return null;
+	}
+
+	const protokoll = await getProtokoll(lastThursday);
+
+	if (!protokoll || !protokoll.inhalt) {
+		return null;
+	}
+
+	// Nur die Beobachtung Kinder Felder zurückgeben, wenn mindestens eines gefüllt ist
+	const beobachtung = {
+		beobachtung_kinder_stufe_1: protokoll.inhalt.beobachtung_kinder_stufe_1 || '',
+		beobachtung_kinder_stufe_2: protokoll.inhalt.beobachtung_kinder_stufe_2 || '',
+		beobachtung_kinder_stufe_3: protokoll.inhalt.beobachtung_kinder_stufe_3 || '',
+		beobachtung_kinder_stufe_4: protokoll.inhalt.beobachtung_kinder_stufe_4 || ''
+	};
+
+	// Prüfe ob mindestens ein Feld gefüllt ist
+	const hasContent = Object.values(beobachtung).some(v => v.trim() !== '');
+
+	return hasContent ? beobachtung : null;
+}
+
+/**
  * Hilfsfunktion: Leeres Protokoll-Template
  * @returns {Object} Leeres Protokoll
  */
