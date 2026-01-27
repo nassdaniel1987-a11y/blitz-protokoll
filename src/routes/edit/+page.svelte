@@ -591,6 +591,14 @@
 		const vorlage = vorlagen.find(v => v.id === selectedVorlageId);
 		if (!vorlage) return;
 
+		// Beobachtung Kinder Felder bewahren (werden wochenweise von Donnerstag übernommen)
+		const beobachtungKinderBackup = {
+			beobachtung_kinder_stufe_1: formData.beobachtung_kinder_stufe_1 || '',
+			beobachtung_kinder_stufe_2: formData.beobachtung_kinder_stufe_2 || '',
+			beobachtung_kinder_stufe_3: formData.beobachtung_kinder_stufe_3 || '',
+			beobachtung_kinder_stufe_4: formData.beobachtung_kinder_stufe_4 || ''
+		};
+
 		// Kopiere die Vorlage in formData
 		formData = JSON.parse(JSON.stringify(vorlage.inhalt));
 		anwesenheitArray = parsePersonenString(formData.anwesenheit);
@@ -606,6 +614,12 @@
 				}
 			});
 		});
+
+		// Beobachtung Kinder wiederherstellen (nicht von Vorlage überschreiben)
+		formData.beobachtung_kinder_stufe_1 = beobachtungKinderBackup.beobachtung_kinder_stufe_1;
+		formData.beobachtung_kinder_stufe_2 = beobachtungKinderBackup.beobachtung_kinder_stufe_2;
+		formData.beobachtung_kinder_stufe_3 = beobachtungKinderBackup.beobachtung_kinder_stufe_3;
+		formData.beobachtung_kinder_stufe_4 = beobachtungKinderBackup.beobachtung_kinder_stufe_4;
 
 		toast.show(`Vorlage "${vorlage.name}" wurde angewendet!`, 'success');
 	}
@@ -624,6 +638,14 @@
 			return;
 		}
 
+		// Beobachtung Kinder Felder bewahren (werden wochenweise von Donnerstag übernommen)
+		const beobachtungKinderBackup = {
+			beobachtung_kinder_stufe_1: formData.beobachtung_kinder_stufe_1 || '',
+			beobachtung_kinder_stufe_2: formData.beobachtung_kinder_stufe_2 || '',
+			beobachtung_kinder_stufe_3: formData.beobachtung_kinder_stufe_3 || '',
+			beobachtung_kinder_stufe_4: formData.beobachtung_kinder_stufe_4 || ''
+		};
+
 		// Kopiere die Daten (aber nicht das Datum!)
 		formData = JSON.parse(JSON.stringify(yesterdayProtokoll.inhalt));
 		anwesenheitArray = parsePersonenString(formData.anwesenheit);
@@ -639,6 +661,12 @@
 				}
 			});
 		});
+
+		// Beobachtung Kinder wiederherstellen (nicht von gestern überschreiben)
+		formData.beobachtung_kinder_stufe_1 = beobachtungKinderBackup.beobachtung_kinder_stufe_1;
+		formData.beobachtung_kinder_stufe_2 = beobachtungKinderBackup.beobachtung_kinder_stufe_2;
+		formData.beobachtung_kinder_stufe_3 = beobachtungKinderBackup.beobachtung_kinder_stufe_3;
+		formData.beobachtung_kinder_stufe_4 = beobachtungKinderBackup.beobachtung_kinder_stufe_4;
 
 		toast.show('✓ Daten von gestern kopiert!', 'success');
 	}
