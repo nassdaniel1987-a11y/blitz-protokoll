@@ -1,9 +1,11 @@
 <script>
 	import { supabase } from '$lib/supabaseClient';
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
+	import { initInactivityTracking, cleanup as cleanupInactivity } from '$lib/inactivityStore';
+	import InactivityWarning from '$lib/components/InactivityWarning.svelte';
 
 	let newPassword = '';
 	let confirmPassword = '';
@@ -20,11 +22,18 @@
 		}
 		user = data.session.user;
 
+		// Inaktivitäts-Tracking starten
+		initInactivityTracking();
+
 		// Prüfe ob Benutzer überhaupt Passwort ändern muss
 		if (user?.user_metadata?.must_change_password !== true) {
 			// Falls nicht, leite zum Dashboard
 			goto('/dashboard');
 		}
+	});
+
+	onDestroy(() => {
+		cleanupInactivity();
 	});
 
 	function validatePassword() {
@@ -79,6 +88,8 @@
 		}, 1000);
 	}
 </script>
+
+<InactivityWarning />
 
 <div class="change-password-container">
 	<div class="change-password-box">

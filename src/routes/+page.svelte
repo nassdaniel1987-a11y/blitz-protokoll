@@ -1,12 +1,24 @@
 <script>
 	import { supabase } from '$lib/supabaseClient';
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import { darkMode } from '$lib/darkModeStore';
 
 	let username = '';
 	let password = '';
 	let errorMessage = '';
 	let loading = false;
+	let inactivityLogout = false;
+
+	onMount(() => {
+		// Prüfe ob Benutzer wegen Inaktivität ausgeloggt wurde
+		const urlParams = new URLSearchParams(window.location.search);
+		if (urlParams.get('reason') === 'inactivity') {
+			inactivityLogout = true;
+			// URL bereinigen (Query-Parameter entfernen)
+			window.history.replaceState({}, '', '/');
+		}
+	});
 
 	async function handleLogin() {
 		loading = true;
@@ -46,6 +58,12 @@
 	<div class="login-box">
 		<h1>Blitz-Protokoll</h1>
 		<p class="subtitle">Anmeldung für das Kollegium</p>
+
+		{#if inactivityLogout}
+			<div class="inactivity-notice">
+				Du wurdest wegen Inaktivität automatisch abgemeldet.
+			</div>
+		{/if}
 
 		<form on:submit|preventDefault={handleLogin}>
 			<div class="form-group">
@@ -207,6 +225,22 @@
 	:global(.dark) .error-message {
 		background: #4a1a1a;
 		color: #ff6b6b;
+	}
+
+	.inactivity-notice {
+		background: #fff3cd;
+		color: #856404;
+		padding: 12px;
+		border-radius: 6px;
+		margin-bottom: 20px;
+		font-size: 14px;
+		text-align: center;
+		border-left: 4px solid #ffc107;
+	}
+
+	:global(.dark) .inactivity-notice {
+		background: #3d3a1a;
+		color: #ffc107;
 	}
 
 	/* iPad-optimiert: Touch-freundliche Größen */

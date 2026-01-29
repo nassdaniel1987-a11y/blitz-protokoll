@@ -1,11 +1,13 @@
 <script>
 	import { supabase } from '$lib/supabaseClient';
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { getPersonen, savePersonen, getRaeume, saveRaeume, getVorlagen, saveVorlagen, renamePersonEverywhere } from '$lib/einstellungenService';
 	import { isCurrentUserAdmin, getAllUsers, createUser, removeMustChangePassword, setUserAdminStatus, assignPersonToUser, deleteUser, resetUserPassword } from '$lib/userManagementService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
+	import { initInactivityTracking, cleanup as cleanupInactivity } from '$lib/inactivityStore';
+	import InactivityWarning from '$lib/components/InactivityWarning.svelte';
 
 	let personen = [];
 	let neuerName = '';
@@ -51,6 +53,9 @@
 			goto('/');
 			return;
 		}
+
+		// Inaktivitäts-Tracking starten
+		initInactivityTracking();
 
 		// Prüfen ob User Admin ist
 		isAdmin = await isCurrentUserAdmin();
@@ -383,7 +388,13 @@
 		expandedSections[sectionName] = !expandedSections[sectionName];
 		expandedSections = { ...expandedSections }; // Trigger reactivity
 	}
+
+	onDestroy(() => {
+		cleanupInactivity();
+	});
 </script>
+
+<InactivityWarning />
 
 <div class="settings-container">
 	<header class="header">

@@ -1,11 +1,13 @@
 <script>
 	import { supabase } from '$lib/supabaseClient';
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { getPersonen, getRaeume, getVorlagen, saveVorlagen } from '$lib/einstellungenService';
 	import { toast } from '$lib/toastStore';
+	import { initInactivityTracking, cleanup as cleanupInactivity } from '$lib/inactivityStore';
 	import PersonenAuswahlModal from '$lib/components/PersonenAuswahlModal.svelte';
 	import PersonenKacheln from '$lib/components/PersonenKacheln.svelte';
+	import InactivityWarning from '$lib/components/InactivityWarning.svelte';
 
 	let vorlageId = null;
 	let vorlageName = '';
@@ -101,6 +103,9 @@
 			goto('/');
 			return;
 		}
+
+		// Inaktivitäts-Tracking starten
+		initInactivityTracking();
 
 		allePersonen = await getPersonen();
 		raumDaten = await getRaeume();
@@ -263,7 +268,13 @@
 		textarea.style.height = 'auto';
 		textarea.style.height = textarea.scrollHeight + 'px';
 	}
+
+	onDestroy(() => {
+		cleanupInactivity();
+	});
 </script>
+
+<InactivityWarning />
 
 <PersonenAuswahlModal
 	bind:show={showAnwesenheitModal}
