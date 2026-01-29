@@ -585,7 +585,7 @@
 		goto(`/dashboard?date=${currentDate}`);
 	}
 
-	function applyVorlage() {
+	async function applyVorlage() {
 		if (!selectedVorlageId) return;
 
 		const vorlage = vorlagen.find(v => v.id === selectedVorlageId);
@@ -620,6 +620,11 @@
 		formData.beobachtung_kinder_stufe_2 = beobachtungKinderBackup.beobachtung_kinder_stufe_2;
 		formData.beobachtung_kinder_stufe_3 = beobachtungKinderBackup.beobachtung_kinder_stufe_3;
 		formData.beobachtung_kinder_stufe_4 = beobachtungKinderBackup.beobachtung_kinder_stufe_4;
+
+		// CHANGELOG: Logge Vorlage-Anwendung in Historie
+		await logChange(currentDate, currentUsername, 'template', {
+			description: `Vorlage "${vorlage.name}" angewendet`
+		});
 
 		toast.show(`Vorlage "${vorlage.name}" wurde angewendet!`, 'success');
 	}
@@ -667,6 +672,11 @@
 		formData.beobachtung_kinder_stufe_2 = beobachtungKinderBackup.beobachtung_kinder_stufe_2;
 		formData.beobachtung_kinder_stufe_3 = beobachtungKinderBackup.beobachtung_kinder_stufe_3;
 		formData.beobachtung_kinder_stufe_4 = beobachtungKinderBackup.beobachtung_kinder_stufe_4;
+
+		// CHANGELOG: Logge Kopie von gestern in Historie
+		await logChange(currentDate, currentUsername, 'copy', {
+			description: `Daten von ${yesterday} kopiert`
+		});
 
 		toast.show('✓ Daten von gestern kopiert!', 'success');
 	}
@@ -1629,6 +1639,10 @@
 									<div class="changelog-change">
 										{#if entry.change_type === 'create'}
 											<span class="change-type-create">✨ {entry.description || 'Protokoll erstellt'}</span>
+										{:else if entry.change_type === 'template'}
+											<span class="change-type-template">📄 {entry.description}</span>
+										{:else if entry.change_type === 'copy'}
+											<span class="change-type-copy">📋 {entry.description}</span>
 										{:else if entry.description}
 											<span class="change-type-update">{entry.description}</span>
 										{:else}
@@ -3095,6 +3109,16 @@
 
 	.change-type-create {
 		color: #27ae60;
+		font-weight: 600;
+	}
+
+	.change-type-template {
+		color: #9b59b6;
+		font-weight: 600;
+	}
+
+	.change-type-copy {
+		color: #3498db;
 		font-weight: 600;
 	}
 
