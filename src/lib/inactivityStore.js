@@ -2,7 +2,6 @@
 // Automatischer Logout bei Inaktivität
 import { writable, get } from 'svelte/store';
 import { supabase } from './supabaseClient';
-import { goto } from '$app/navigation';
 
 // Konfiguration
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 Minuten in Millisekunden
@@ -64,7 +63,8 @@ function showWarning() {
 async function performLogout() {
 	cleanup();
 	await supabase.auth.signOut();
-	goto('/?reason=inactivity');
+	// Verwende window.location statt goto, da goto im Timer-Kontext nicht zuverlässig funktioniert
+	window.location.href = '/?reason=inactivity';
 }
 
 // Session verlängern (bei Benutzer-Aktivität oder Button-Klick)
