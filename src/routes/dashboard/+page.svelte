@@ -7,9 +7,11 @@
 	import { getNachrichten } from '$lib/teamNachrichtenService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
+	import { initInactivityTracking, cleanup as cleanupInactivity } from '$lib/inactivityStore';
 	import Wochenansicht from '$lib/components/Wochenansicht.svelte';
 	import TeamNachrichtenModal from '$lib/components/TeamNachrichtenModal.svelte';
 	import StatistikModal from '$lib/components/StatistikModal.svelte';
+	import InactivityWarning from '$lib/components/InactivityWarning.svelte';
 
 	let currentDate = getToday();
 	let protokoll = null;
@@ -36,6 +38,9 @@
 			goto('/');
 			return;
 		}
+
+		// Inaktivitäts-Tracking starten
+		initInactivityTracking();
 
 		// Username extrahieren (von email)
 		const email = data.session.user.email;
@@ -65,6 +70,7 @@
 		if (realtimeChannel) {
 			supabase.removeChannel(realtimeChannel);
 		}
+		cleanupInactivity();
 	});
 
 	// REALTIME: Subscribe zu Nachrichten für Badge-Counter
@@ -210,6 +216,8 @@
 		}
 	}
 </script>
+
+<InactivityWarning />
 
 <TeamNachrichtenModal
 	bind:show={showNachrichtenModal}

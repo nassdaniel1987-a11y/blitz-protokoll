@@ -9,9 +9,11 @@
 	import { getNachrichten } from '$lib/teamNachrichtenService';
 	import { darkMode } from '$lib/darkModeStore';
 	import { toast } from '$lib/toastStore';
+	import { initInactivityTracking, cleanup as cleanupInactivity } from '$lib/inactivityStore';
 	import PersonenAuswahlModal from '$lib/components/PersonenAuswahlModal.svelte';
 	import PersonenKacheln from '$lib/components/PersonenKacheln.svelte';
 	import TeamNachrichtenModal from '$lib/components/TeamNachrichtenModal.svelte';
+	import InactivityWarning from '$lib/components/InactivityWarning.svelte';
 	import { saveVorlagen } from '$lib/einstellungenService';
 	// CHANGELOG: Import für Änderungsprotokoll
 	import { logChange, compareProtocols } from '$lib/changelogService';
@@ -180,6 +182,9 @@
 			goto('/');
 			return;
 		}
+
+		// Inaktivitäts-Tracking starten
+		initInactivityTracking();
 
 		// Username extrahieren
 		const email = data.session.user.email;
@@ -374,6 +379,9 @@
 		if (messagesSubscription) {
 			await supabase.removeChannel(messagesSubscription);
 		}
+
+		// Inaktivitäts-Tracking beenden
+		cleanupInactivity();
 	});
 
 	function parsePersonenString(str) {
@@ -883,6 +891,8 @@
 		}
 	}
 </script>
+
+<InactivityWarning />
 
 <TeamNachrichtenModal
 	bind:show={showNachrichtenModal}
