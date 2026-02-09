@@ -1,6 +1,7 @@
 // src/lib/inactivityStore.js
 // Automatischer Logout bei Inaktivität
 import { writable, get } from 'svelte/store';
+import { browser } from '$app/environment';
 import { supabase } from './supabaseClient';
 
 // Konfiguration
@@ -61,6 +62,7 @@ function showWarning() {
 
 // Logout durchführen
 async function performLogout() {
+	if (!browser) return;
 	cleanup();
 	await supabase.auth.signOut();
 	// Verwende window.location statt goto, da goto im Timer-Kontext nicht zuverlässig funktioniert
@@ -84,6 +86,7 @@ function handleActivity() {
 
 // Initialisierung - einmal pro Session aufrufen
 export function initInactivityTracking() {
+	if (!browser) return;
 	if (isInitialized) return;
 	isInitialized = true;
 
@@ -98,6 +101,7 @@ export function initInactivityTracking() {
 
 // Aufräumen - beim Logout oder Seitenwechsel
 export function cleanup() {
+	if (!browser) return;
 	isInitialized = false;
 
 	// Event Listener entfernen
