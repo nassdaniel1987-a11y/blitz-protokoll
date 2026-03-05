@@ -6,8 +6,10 @@
 	import { getRaeume } from '$lib/einstellungenService';
 	import { getNachrichten } from '$lib/teamNachrichtenService';
 	import { darkMode } from '$lib/darkModeStore';
+	import { modernUi } from '$lib/modernUiStore';
 	import { toast } from '$lib/toastStore';
 	import { initInactivityTracking, cleanup as cleanupInactivity } from '$lib/inactivityStore';
+	import { isCurrentUserAdmin } from '$lib/userManagementService';
 	import Wochenansicht from '$lib/components/Wochenansicht.svelte';
 	import TeamNachrichtenModal from '$lib/components/TeamNachrichtenModal.svelte';
 	import StatistikModal from '$lib/components/StatistikModal.svelte';
@@ -25,6 +27,7 @@
 	let realtimeChannel = null; // Realtime für Badge-Counter
 	let showOnboardingModal = false; // Onboarding für neue Nutzer
 	let activeTooltip = null; // Für Hilfe-Tooltips
+	let isAdmin = false; // Für Modern UI Banner
 
 	// Raumliste - wird dynamisch geladen
 	let raeume = [];
@@ -45,6 +48,9 @@
 		// Username extrahieren (von email)
 		const email = data.session.user.email;
 		currentUsername = email.split('@')[0];
+
+		// Admin-Status für Modern UI Banner
+		isAdmin = await isCurrentUserAdmin();
 
 		// Prüfe ob Nutzer neu ist (Onboarding noch nicht gesehen)
 		const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
@@ -287,6 +293,14 @@
 {/if}
 
 <div class="dashboard">
+	<!-- Modern UI Admin-Preview Banner -->
+	{#if isAdmin && $modernUi}
+		<div class="modern-ui-banner no-print">
+			<span class="modern-ui-banner-icon">&#x2728;</span>
+			<span>Modern UI Preview - Nur fuer Admins sichtbar</span>
+		</div>
+	{/if}
+
 	<header class="header no-print">
 		<h1>Blitz-Protokoll</h1>
 		<div class="header-actions">
@@ -572,9 +586,292 @@
 		align-items: center;
 		background: var(--bg-secondary);
 		padding: 20px 30px;
-		border-radius: 12px;
+		border-radius: var(--radius-lg, 12px);
 		box-shadow: 0 2px 8px var(--shadow);
 	}
+
+	/* === MODERN UI DASHBOARD OVERRIDES === */
+	:global(.modern-ui) .header {
+		border: 1px solid var(--border-color);
+		box-shadow: var(--shadow-md);
+		border-radius: var(--radius-xl);
+		padding: 16px 28px;
+		backdrop-filter: blur(8px);
+		background: var(--bg-secondary);
+	}
+
+	:global(.modern-ui) .header h1 {
+		background: var(--gradient-primary);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		font-weight: 700;
+		font-size: 1.6rem;
+		letter-spacing: -0.02em;
+	}
+
+	:global(.modern-ui) .nachrichten-btn,
+	:global(.modern-ui) .statistik-btn,
+	:global(.modern-ui) .settings-btn,
+	:global(.modern-ui) .dark-mode-toggle {
+		border-radius: var(--radius-md);
+		border: 1.5px solid var(--border-color);
+		background: var(--bg-primary);
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	:global(.modern-ui) .nachrichten-btn:hover,
+	:global(.modern-ui) .statistik-btn:hover,
+	:global(.modern-ui) .settings-btn:hover,
+	:global(.modern-ui) .dark-mode-toggle:hover {
+		border-color: var(--accent-color);
+		background: var(--accent-light);
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-accent);
+	}
+
+	:global(.modern-ui) .logout-btn {
+		background: var(--bg-primary);
+		color: var(--text-secondary);
+		border: 1.5px solid var(--border-color);
+		border-radius: var(--radius-md);
+		font-weight: 500;
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .logout-btn:hover {
+		background: var(--danger-bg, rgba(239, 68, 68, 0.08));
+		color: var(--danger-color, #ef4444);
+		border-color: var(--danger-color, #ef4444);
+	}
+
+	:global(.modern-ui) .view-toggle {
+		border-radius: var(--radius-xl);
+		border: 1px solid var(--border-color);
+		box-shadow: var(--shadow-md);
+		padding: 12px;
+		gap: 8px;
+	}
+
+	:global(.modern-ui) .toggle-btn {
+		border-radius: var(--radius-md);
+		border: 1.5px solid transparent;
+		font-weight: 500;
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	:global(.modern-ui) .toggle-btn:hover {
+		background: var(--accent-light);
+		border-color: var(--accent-color);
+	}
+
+	:global(.modern-ui) .toggle-btn.active {
+		background: var(--gradient-primary);
+		border-color: transparent;
+		box-shadow: var(--shadow-accent);
+	}
+
+	:global(.modern-ui) .toggle-btn.test-mode-btn {
+		background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+		border-color: transparent;
+		box-shadow: 0 4px 12px rgba(236, 72, 153, 0.25);
+	}
+
+	:global(.modern-ui) .toggle-btn.test-mode-btn:hover {
+		box-shadow: 0 6px 20px rgba(236, 72, 153, 0.35);
+		transform: translateY(-2px);
+	}
+
+	:global(.modern-ui) .date-nav {
+		border-radius: var(--radius-xl);
+		border: 1px solid var(--border-color);
+		box-shadow: var(--shadow-md);
+	}
+
+	:global(.modern-ui) .nav-btn {
+		border-radius: var(--radius-md);
+		background: var(--gradient-primary);
+		font-weight: 500;
+		transition: all 0.2s;
+		box-shadow: var(--shadow-accent);
+	}
+
+	:global(.modern-ui) .nav-btn:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 6px 20px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .section {
+		border-radius: var(--radius-xl);
+		border: 1px solid var(--border-color);
+		box-shadow: var(--shadow-md);
+		padding: 28px;
+	}
+
+	:global(.modern-ui) .section h3 {
+		border-bottom: 2px solid transparent;
+		border-image: var(--gradient-primary) 1;
+		padding-bottom: 12px;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+	}
+
+	:global(.modern-ui) .stat-card {
+		border-radius: var(--radius-xl);
+		box-shadow: var(--shadow-md);
+		transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s;
+	}
+
+	:global(.modern-ui) .stat-card:hover {
+		transform: translateY(-4px);
+		box-shadow: var(--shadow-lg);
+	}
+
+	:global(.modern-ui) .stat-card.stat-primary {
+		background: var(--gradient-primary);
+	}
+
+	:global(.modern-ui) .stat-card.stat-info {
+		background: linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%);
+	}
+
+	:global(.modern-ui) .stat-card.stat-warning {
+		background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+	}
+
+	:global(.modern-ui) .stat-card.stat-info-light {
+		border: 1.5px solid var(--warning-color, #f59e0b);
+		background: var(--warning-bg, rgba(245, 158, 11, 0.08));
+		border-radius: var(--radius-xl);
+	}
+
+	:global(.modern-ui) .edit-btn {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-md);
+		font-weight: 500;
+		box-shadow: var(--shadow-accent);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .edit-btn:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 6px 20px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .delete-btn {
+		border-radius: var(--radius-md);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .print-btn {
+		background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+		border-radius: var(--radius-md);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .print-btn:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+	}
+
+	:global(.modern-ui) .planung-table {
+		border-radius: var(--radius-md);
+		overflow: hidden;
+		border: 1px solid var(--border-color);
+	}
+
+	:global(.modern-ui) .planung-table thead th {
+		background: var(--gradient-primary);
+		font-weight: 600;
+		letter-spacing: 0.01em;
+		padding: 14px 12px;
+	}
+
+	:global(.modern-ui) .planung-table tbody tr {
+		transition: background-color 0.15s;
+	}
+
+	:global(.modern-ui) .planung-table tbody tr:hover {
+		background: var(--accent-light);
+	}
+
+	:global(.modern-ui) .no-protokoll {
+		border-radius: var(--radius-xl);
+		border: 1px solid var(--border-color);
+		box-shadow: var(--shadow-md);
+	}
+
+	:global(.modern-ui) .create-btn {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-accent);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .create-btn:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .nachrichten-btn .badge {
+		background: linear-gradient(135deg, #ef4444, #dc2626);
+		box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+	}
+
+	:global(.modern-ui) .onboarding-header {
+		background: var(--gradient-header);
+	}
+
+	:global(.modern-ui) .onboarding-modal {
+		border-radius: var(--radius-xl);
+		border: 1px solid var(--border-color);
+		box-shadow: var(--shadow-lg);
+	}
+
+	:global(.modern-ui) .tip-box {
+		border-radius: var(--radius-md);
+		border-left: 4px solid var(--accent-color);
+		transition: transform 0.2s;
+	}
+
+	:global(.modern-ui) .tip-box:hover {
+		transform: translateX(4px);
+	}
+
+	:global(.modern-ui) .btn-test {
+		background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+		border-radius: var(--radius-md);
+		box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+	}
+
+	:global(.modern-ui) .help-btn-header {
+		background: var(--gradient-primary);
+		box-shadow: 0 2px 6px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .tooltip-box-header {
+		border: 1.5px solid var(--accent-color);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-lg);
+		background: var(--bg-secondary);
+	}
+
+	:global(.modern-ui) .beobachtung-section {
+		border: 1.5px solid var(--accent-color);
+		border-radius: var(--radius-md);
+		background: var(--accent-light);
+	}
+
+	:global(.modern-ui) .today-btn {
+		border-radius: var(--radius-sm);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .today-btn:hover {
+		border-color: var(--accent-color);
+		background: var(--accent-light);
+	}
+	/* === END MODERN UI DASHBOARD OVERRIDES === */
 
 	.header-actions {
 		display: flex;
