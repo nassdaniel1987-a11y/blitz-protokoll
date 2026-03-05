@@ -243,6 +243,74 @@
 		color: #ffc107;
 	}
 
+	/* === MODERN UI LOGIN OVERRIDES === */
+	:global(.modern-ui) .login-container {
+		background: var(--gradient-header);
+	}
+
+	:global(.modern-ui.dark) .login-container {
+		background: linear-gradient(135deg, #0f1419 0%, #1c1b3a 50%, #0f1419 100%);
+	}
+
+	:global(.modern-ui) .login-box {
+		border-radius: var(--radius-xl);
+		box-shadow: var(--shadow-lg);
+		border: 1px solid var(--border-color);
+		padding: 44px;
+	}
+
+	:global(.modern-ui) .login-box h1 {
+		background: var(--gradient-primary);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		font-weight: 700;
+		font-size: 2.2rem;
+		letter-spacing: -0.03em;
+	}
+
+	:global(.modern-ui) .login-box input {
+		border-radius: var(--radius-md);
+		border: 1.5px solid var(--border-color);
+		padding: 14px;
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .login-box input:focus {
+		border-color: var(--accent-color);
+		box-shadow: 0 0 0 3px var(--accent-glow);
+	}
+
+	:global(.modern-ui) .login-box button[type="submit"] {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-md);
+		font-weight: 600;
+		padding: 16px;
+		box-shadow: var(--shadow-accent);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .login-box button[type="submit"]:hover:not(:disabled) {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 24px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .dark-mode-toggle {
+		border-radius: var(--radius-md);
+		backdrop-filter: blur(12px);
+		border: 1.5px solid rgba(255, 255, 255, 0.2);
+	}
+
+	:global(.modern-ui) .error-message {
+		border-radius: var(--radius-sm);
+		border-left: 4px solid #ef4444;
+	}
+
+	:global(.modern-ui) .inactivity-notice {
+		border-radius: var(--radius-sm);
+	}
+	/* === END MODERN UI LOGIN OVERRIDES === */
+
 	/* iPad-optimiert: Touch-freundliche Größen */
 	@media (max-width: 768px) {
 		input, button {

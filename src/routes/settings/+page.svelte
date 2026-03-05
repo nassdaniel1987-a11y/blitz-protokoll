@@ -5,6 +5,7 @@
 	import { getPersonen, savePersonen, getRaeume, saveRaeume, getVorlagen, saveVorlagen, renamePersonEverywhere } from '$lib/einstellungenService';
 	import { isCurrentUserAdmin, getAllUsers, createUser, removeMustChangePassword, setUserAdminStatus, assignPersonToUser, deleteUser, resetUserPassword } from '$lib/userManagementService';
 	import { darkMode } from '$lib/darkModeStore';
+	import { modernUi } from '$lib/modernUiStore';
 	import { toast } from '$lib/toastStore';
 	import { initInactivityTracking, cleanup as cleanupInactivity } from '$lib/inactivityStore';
 	import InactivityWarning from '$lib/components/InactivityWarning.svelte';
@@ -407,6 +408,43 @@
 	{#if loading}
 		<p class="loading-text">Lade Einstellungen...</p>
 	{:else}
+		<!-- MODERN UI PREVIEW (nur für Admins) -->
+		{#if isAdmin}
+			<section class="section modern-ui-section">
+				<h2 class="section-header">
+					&#x2728; Design-Vorschau (Modern UI)
+				</h2>
+				<p class="description">
+					Teste das modernisierte Design. Nur du als Admin siehst diese Aenderungen. Normale Nutzer sehen weiterhin das klassische Design.
+				</p>
+				<div class="modern-ui-toggle-row">
+					<span class="modern-ui-toggle-label">Modern UI aktiviert</span>
+					<button
+						type="button"
+						class="modern-ui-switch"
+						class:active={$modernUi}
+						on:click={() => {
+							$modernUi = !$modernUi;
+							if ($modernUi) {
+								document.documentElement.classList.add('modern-ui');
+							} else {
+								document.documentElement.classList.remove('modern-ui');
+							}
+						}}
+						role="switch"
+						aria-checked={$modernUi}
+					>
+						<span class="modern-ui-switch-thumb"></span>
+					</button>
+				</div>
+				{#if $modernUi}
+					<div class="modern-ui-info">
+						Das modernisierte Design ist aktiv. Du siehst die Aenderungen auf allen Seiten. Wenn alles passt, kann das Design fuer alle Nutzer freigeschaltet werden.
+					</div>
+				{/if}
+			</section>
+		{/if}
+
 		<!-- USER-VERWALTUNG (nur für Admins) -->
 		{#if isAdmin}
 			<section class="section admin-section">
@@ -1530,6 +1568,283 @@
 		opacity: 0.6;
 		cursor: not-allowed;
 	}
+
+	/* Modern UI Toggle Styles */
+	.modern-ui-section {
+		border-left: 4px solid var(--accent-color);
+	}
+
+	.modern-ui-toggle-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 16px 0;
+	}
+
+	.modern-ui-toggle-label {
+		font-size: 1rem;
+		font-weight: 500;
+		color: var(--text-primary);
+	}
+
+	.modern-ui-switch {
+		position: relative;
+		width: 52px;
+		height: 28px;
+		border-radius: 14px;
+		background: var(--border-color);
+		border: none;
+		cursor: pointer;
+		transition: background-color 0.3s;
+		padding: 0;
+		flex-shrink: 0;
+	}
+
+	.modern-ui-switch.active {
+		background: var(--accent-color);
+	}
+
+	.modern-ui-switch-thumb {
+		position: absolute;
+		top: 3px;
+		left: 3px;
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		background: white;
+		transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+	}
+
+	.modern-ui-switch.active .modern-ui-switch-thumb {
+		transform: translateX(24px);
+	}
+
+	.modern-ui-info {
+		padding: 12px 16px;
+		background: var(--accent-light, rgba(79, 109, 245, 0.08));
+		border: 1px solid var(--accent-color);
+		border-radius: 8px;
+		font-size: 14px;
+		color: var(--accent-color);
+		line-height: 1.5;
+	}
+
+	/* === MODERN UI SETTINGS OVERRIDES === */
+	:global(.modern-ui) .settings-container {
+		background: var(--bg-primary);
+	}
+
+	:global(.modern-ui) .header {
+		border-radius: var(--radius-xl);
+		border: 1px solid var(--border-color);
+		box-shadow: var(--shadow-md);
+	}
+
+	:global(.modern-ui) .header h1 {
+		background: var(--gradient-primary);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		font-weight: 700;
+		letter-spacing: -0.02em;
+	}
+
+	:global(.modern-ui) .back-btn {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-md);
+		font-weight: 500;
+		box-shadow: var(--shadow-accent);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .back-btn:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 6px 20px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .section {
+		border-radius: var(--radius-xl);
+		border: 1px solid var(--border-color);
+		box-shadow: var(--shadow-md);
+	}
+
+	:global(.modern-ui) .section-header {
+		font-weight: 600;
+		letter-spacing: -0.01em;
+	}
+
+	:global(.modern-ui) .person-item {
+		border-radius: var(--radius-md);
+		border: 1.5px solid var(--border-color);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .person-item:hover {
+		border-color: var(--accent-color);
+		background: var(--accent-light);
+		transform: translateX(4px);
+	}
+
+	:global(.modern-ui) .user-item {
+		border-radius: var(--radius-lg);
+		border: 1.5px solid var(--border-color);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .user-item:hover {
+		border-color: var(--accent-color);
+		box-shadow: var(--shadow-md);
+	}
+
+	:global(.modern-ui) .admin-badge {
+		background: linear-gradient(135deg, #f59e0b, #d97706);
+		border-radius: 6px;
+		font-weight: 600;
+	}
+
+	:global(.modern-ui) .password-badge {
+		background: linear-gradient(135deg, #ef4444, #dc2626);
+		border-radius: 6px;
+		font-weight: 600;
+	}
+
+	:global(.modern-ui) .add-btn {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-md);
+		font-weight: 500;
+		box-shadow: var(--shadow-accent);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .add-btn:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 6px 20px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .save-btn {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-md);
+		font-weight: 600;
+		box-shadow: var(--shadow-accent);
+		padding: 16px 32px;
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .save-btn:hover:not(:disabled) {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 24px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .create-user-btn {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-accent);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .create-user-btn:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 6px 20px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .action-btn {
+		border-radius: var(--radius-sm);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .action-btn:hover {
+		background: var(--gradient-primary);
+		color: white;
+		border-color: transparent;
+		transform: translateY(-1px);
+	}
+
+	:global(.modern-ui) .rename-btn {
+		border-radius: var(--radius-sm);
+		background: var(--accent-color);
+	}
+
+	:global(.modern-ui) .remove-btn {
+		border-radius: var(--radius-sm);
+		background: linear-gradient(135deg, #ef4444, #dc2626);
+	}
+
+	:global(.modern-ui) .modal-overlay {
+		backdrop-filter: blur(8px);
+		background: rgba(0, 0, 0, 0.5);
+	}
+
+	:global(.modern-ui) .modal-content {
+		border-radius: var(--radius-xl);
+		border: 1px solid var(--border-color);
+		box-shadow: var(--shadow-lg);
+	}
+
+	:global(.modern-ui) .btn-primary {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-md);
+		font-weight: 600;
+		box-shadow: var(--shadow-accent);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .btn-primary:hover:not(:disabled) {
+		transform: translateY(-1px);
+		box-shadow: 0 6px 20px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .btn-secondary {
+		border-radius: var(--radius-md);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .person-select {
+		border-radius: var(--radius-sm);
+	}
+
+	:global(.modern-ui) .person-select:focus {
+		box-shadow: 0 0 0 3px var(--accent-glow);
+	}
+
+	:global(.modern-ui) .add-person input,
+	:global(.modern-ui) .add-raum input {
+		border-radius: var(--radius-md);
+	}
+
+	:global(.modern-ui) .form-group input {
+		border-radius: var(--radius-md);
+	}
+
+	:global(.modern-ui) .modal-info {
+		border-radius: var(--radius-sm);
+		border-left: 4px solid var(--info-color, #3b82f6);
+		background: var(--info-bg, rgba(59, 130, 246, 0.08));
+		color: var(--info-color, #3b82f6);
+	}
+
+	:global(.modern-ui) .modern-ui-section {
+		border-left: 4px solid var(--accent-color);
+		background: var(--bg-secondary);
+	}
+
+	:global(.modern-ui) .modern-ui-switch.active {
+		background: var(--gradient-primary);
+	}
+
+	:global(.modern-ui) .modern-ui-info {
+		border-radius: var(--radius-md);
+	}
+
+	:global(.modern-ui) .copy-btn {
+		border-radius: var(--radius-sm);
+		background: linear-gradient(135deg, #06b6d4, #0891b2);
+	}
+
+	:global(.modern-ui) .edit-btn {
+		border-radius: var(--radius-sm);
+	}
+	/* === END MODERN UI SETTINGS OVERRIDES === */
 
 	@media (max-width: 768px) {
 		.header {
