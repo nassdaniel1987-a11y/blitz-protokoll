@@ -248,6 +248,61 @@
 		color: #ff6b6b;
 	}
 
+	/* === MODERN UI CHANGE PASSWORD OVERRIDES === */
+	:global(.modern-ui) .change-password-container {
+		background: var(--gradient-header);
+	}
+
+	:global(.modern-ui.dark) .change-password-container {
+		background: linear-gradient(135deg, #0f1419 0%, #1c1b3a 50%, #0f1419 100%);
+	}
+
+	:global(.modern-ui) .change-password-box {
+		border-radius: var(--radius-xl);
+		box-shadow: var(--shadow-lg);
+		border: 1px solid var(--border-color);
+		padding: 44px;
+	}
+
+	:global(.modern-ui) .change-password-box h1 {
+		background: var(--gradient-primary);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		font-weight: 700;
+		letter-spacing: -0.02em;
+	}
+
+	:global(.modern-ui) .change-password-box input {
+		border-radius: var(--radius-md);
+		border: 1.5px solid var(--border-color);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .change-password-box input:focus {
+		border-color: var(--accent-color);
+		box-shadow: 0 0 0 3px var(--accent-glow);
+	}
+
+	:global(.modern-ui) .change-password-box button {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-md);
+		font-weight: 600;
+		box-shadow: var(--shadow-accent);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .change-password-box button:hover:not(:disabled) {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 24px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .error-message {
+		border-radius: var(--radius-sm);
+		border-left: 4px solid #ef4444;
+	}
+	/* === END MODERN UI CHANGE PASSWORD OVERRIDES === */
+
 	/* iPad-optimiert */
 	@media (max-width: 768px) {
 		input,
