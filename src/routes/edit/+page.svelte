@@ -3292,4 +3292,306 @@
 			grid-template-columns: 1fr;
 		}
 	}
+
+	/* === MODERN UI EDIT PAGE OVERRIDES === */
+	:global(.modern-ui) .edit-container {
+		background: var(--bg-primary);
+	}
+
+	:global(.modern-ui) .edit-header h1 {
+		background: var(--gradient-primary);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		font-weight: 700;
+		letter-spacing: -0.02em;
+	}
+
+	:global(.modern-ui) .section {
+		border-radius: var(--radius-xl);
+		border: 1px solid var(--border-color);
+		box-shadow: var(--shadow-md);
+		padding: 28px;
+	}
+
+	:global(.modern-ui) h2 {
+		font-weight: 600;
+		letter-spacing: -0.01em;
+	}
+
+	:global(.modern-ui) input[type="text"],
+	:global(.modern-ui) textarea {
+		border-radius: var(--radius-md);
+		border: 1.5px solid var(--border-color);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) input[type="text"]:focus,
+	:global(.modern-ui) textarea:focus {
+		border-color: var(--accent-color);
+		box-shadow: 0 0 0 3px var(--accent-glow);
+	}
+
+	:global(.modern-ui) .select-btn {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-md);
+		font-weight: 500;
+		box-shadow: var(--shadow-accent);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .select-btn:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 6px 20px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .nachrichten-btn {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-md);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .nachrichten-btn:hover {
+		transform: translateY(-1px);
+		box-shadow: var(--shadow-accent);
+	}
+
+	:global(.modern-ui) .nachrichten-btn .badge {
+		background: linear-gradient(135deg, #ef4444, #dc2626);
+		box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+	}
+
+	:global(.modern-ui) .matrix {
+		border-radius: var(--radius-md);
+		overflow: hidden;
+		border: 1px solid var(--border-color);
+	}
+
+	:global(.modern-ui) .matrix thead th {
+		background: var(--gradient-primary);
+		font-weight: 600;
+		letter-spacing: 0.01em;
+		padding: 14px 8px;
+	}
+
+	:global(.modern-ui) .matrix tbody tr {
+		transition: background-color 0.15s;
+	}
+
+	:global(.modern-ui) .matrix tbody tr:hover {
+		background: var(--accent-light);
+	}
+
+	:global(.modern-ui) .matrix-input {
+		border-radius: var(--radius-sm);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .matrix-input:focus {
+		border-color: var(--accent-color);
+		box-shadow: 0 0 0 2px var(--accent-glow);
+	}
+
+	:global(.modern-ui) .btn-save {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-md);
+		font-weight: 600;
+		box-shadow: var(--shadow-accent);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .btn-save:hover:not(:disabled) {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 24px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .btn-cancel {
+		border-radius: var(--radius-md);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .btn-cancel:hover {
+		border-color: var(--accent-color);
+		background: var(--accent-light);
+	}
+
+	:global(.modern-ui) .btn-template {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-accent);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .btn-template:hover {
+		box-shadow: 0 6px 20px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .copy-yesterday-btn {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-lg);
+		box-shadow: var(--shadow-accent);
+	}
+
+	:global(.modern-ui) .copy-yesterday-btn:hover {
+		box-shadow: 0 8px 24px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .vorlage-section {
+		border-left: 4px solid var(--accent-color);
+	}
+
+	:global(.modern-ui) .vorlage-select {
+		border-radius: var(--radius-md);
+		border: 1.5px solid var(--border-color);
+	}
+
+	:global(.modern-ui) .vorlage-select:focus {
+		box-shadow: 0 0 0 3px var(--accent-glow);
+	}
+
+	:global(.modern-ui) .validierung-box {
+		border-left: 4px solid var(--warning-color, #f59e0b);
+	}
+
+	:global(.modern-ui) .validierung-item {
+		border-radius: var(--radius-md);
+	}
+
+	:global(.modern-ui) .modal-overlay {
+		backdrop-filter: blur(8px);
+		background: rgba(0, 0, 0, 0.5);
+	}
+
+	:global(.modern-ui) .modal-content.template-modal {
+		border-radius: var(--radius-xl);
+		border: 1px solid var(--border-color);
+		box-shadow: var(--shadow-lg);
+	}
+
+	:global(.modern-ui) .test-mode-banner {
+		background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+		border: 2px solid transparent;
+		border-radius: var(--radius-lg);
+		box-shadow: 0 4px 20px rgba(236, 72, 153, 0.3);
+	}
+
+	:global(.modern-ui) .realtime-warning {
+		border-radius: var(--radius-lg);
+		border: 2px solid var(--warning-color, #f59e0b);
+	}
+
+	:global(.modern-ui) .help-btn {
+		background: var(--gradient-primary);
+		box-shadow: 0 2px 6px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .tooltip-box {
+		border: 1.5px solid var(--accent-color);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-lg);
+		background: var(--bg-secondary);
+	}
+
+	:global(.modern-ui) .paint-mode-section {
+		border-left: 4px solid var(--info-color, #3b82f6);
+		border-radius: var(--radius-xl);
+		border: 1px solid var(--border-color);
+		box-shadow: var(--shadow-md);
+	}
+
+	:global(.modern-ui) .paint-mode-person {
+		border-radius: var(--radius-md);
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	:global(.modern-ui) .paint-mode-person:hover {
+		transform: translateY(-3px);
+		box-shadow: var(--shadow-md);
+	}
+
+	:global(.modern-ui) .paint-mode-person.active {
+		background: var(--gradient-primary);
+		border-color: var(--accent-color);
+		box-shadow: var(--shadow-accent);
+	}
+
+	:global(.modern-ui) .paint-mode-person.eraser-btn.active {
+		background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+	}
+
+	:global(.modern-ui) .toggle-detailed-btn {
+		border-radius: var(--radius-md);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .toggle-detailed-btn:hover {
+		border-color: var(--accent-color);
+		background: var(--accent-light);
+	}
+
+	:global(.modern-ui) .beobachtung-kinder-section {
+		border: 2px solid var(--accent-color);
+		border-radius: var(--radius-md);
+		background: var(--accent-light);
+	}
+
+	:global(.modern-ui) .beobachtung-item textarea {
+		border-radius: var(--radius-sm);
+	}
+
+	:global(.modern-ui) .beobachtung-item textarea:focus {
+		border-color: var(--accent-color);
+		box-shadow: 0 0 0 3px var(--accent-glow);
+	}
+
+	:global(.modern-ui) .changelog-section {
+		border-radius: var(--radius-md);
+		border: 1px solid var(--border-color);
+		overflow: hidden;
+	}
+
+	:global(.modern-ui) .changelog-entry {
+		border-radius: var(--radius-sm);
+		border-left: 3px solid var(--accent-color);
+	}
+
+	:global(.modern-ui) .chip {
+		background: var(--accent-color);
+		border-radius: var(--radius-md);
+	}
+
+	:global(.modern-ui) .person-picker-list {
+		border-radius: var(--radius-md);
+	}
+
+	:global(.modern-ui) .person-picker-item:hover {
+		background: var(--accent-light);
+	}
+
+	:global(.modern-ui) .person-picker-item.selected {
+		background: var(--accent-light);
+	}
+
+	:global(.modern-ui) .experimental-section {
+		border-radius: var(--radius-md);
+		border: 2px solid var(--border-color);
+	}
+
+	:global(.modern-ui) .experimental-toggle {
+		background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+	}
+
+	:global(.modern-ui) .btn-experimental {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-sm);
+	}
+
+	:global(.modern-ui) .search-input {
+		border-radius: var(--radius-md);
+	}
+
+	:global(.modern-ui) .search-input:focus {
+		box-shadow: 0 0 0 3px var(--accent-glow);
+	}
+	/* === END MODERN UI EDIT PAGE OVERRIDES === */
 </style>

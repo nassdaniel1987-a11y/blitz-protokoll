@@ -925,6 +925,115 @@
 		white-space: pre-wrap;
 	}
 
+	/* === MODERN UI VORLAGEN EDIT OVERRIDES === */
+	:global(.modern-ui) .edit-container {
+		background: var(--bg-primary);
+	}
+
+	:global(.modern-ui) h1 {
+		background: var(--gradient-primary);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		font-weight: 700;
+		letter-spacing: -0.02em;
+	}
+
+	:global(.modern-ui) .section {
+		border-radius: var(--radius-xl);
+		border: 1px solid var(--border-color);
+		box-shadow: var(--shadow-md);
+	}
+
+	:global(.modern-ui) input[type="text"],
+	:global(.modern-ui) textarea {
+		border-radius: var(--radius-md);
+		border: 1.5px solid var(--border-color);
+	}
+
+	:global(.modern-ui) input[type="text"]:focus,
+	:global(.modern-ui) textarea:focus {
+		box-shadow: 0 0 0 3px var(--accent-glow);
+	}
+
+	:global(.modern-ui) .select-btn {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-accent);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .select-btn:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 6px 20px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .matrix {
+		border-radius: var(--radius-md);
+		overflow: hidden;
+		border: 1px solid var(--border-color);
+	}
+
+	:global(.modern-ui) .matrix thead th {
+		background: var(--gradient-primary);
+		padding: 14px 8px;
+	}
+
+	:global(.modern-ui) .matrix-input {
+		border-radius: var(--radius-sm);
+	}
+
+	:global(.modern-ui) .matrix-input:focus {
+		box-shadow: 0 0 0 2px var(--accent-glow);
+	}
+
+	:global(.modern-ui) .btn-save {
+		background: var(--gradient-primary);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-accent);
+		transition: all 0.2s;
+	}
+
+	:global(.modern-ui) .btn-save:hover:not(:disabled) {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 24px rgba(79, 109, 245, 0.3);
+	}
+
+	:global(.modern-ui) .btn-cancel {
+		border-radius: var(--radius-md);
+	}
+
+	:global(.modern-ui) .btn-cancel:hover {
+		border-color: var(--accent-color);
+		background: var(--accent-light);
+	}
+
+	:global(.modern-ui) .paint-mode-section {
+		border: 2px dashed var(--accent-color);
+		border-radius: var(--radius-xl);
+	}
+
+	:global(.modern-ui) .paint-mode-person {
+		border-radius: var(--radius-md);
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	:global(.modern-ui) .paint-mode-person:hover {
+		transform: translateY(-3px);
+		box-shadow: var(--shadow-md);
+	}
+
+	:global(.modern-ui) .paint-mode-person.active {
+		background: var(--gradient-primary);
+		border-color: var(--accent-color);
+		box-shadow: var(--shadow-accent);
+	}
+
+	:global(.modern-ui) .paint-mode-person.eraser-btn.active {
+		background: linear-gradient(135deg, #ef4444, #dc2626);
+	}
+	/* === END MODERN UI VORLAGEN EDIT OVERRIDES === */
+
 	@media (max-width: 768px) {
 		.edit-container {
 			padding: 15px;
