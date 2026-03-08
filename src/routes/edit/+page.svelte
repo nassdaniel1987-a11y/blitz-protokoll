@@ -32,6 +32,8 @@
 		getActiveFieldEditors,
 		subscribeToFieldEditors
 	} from '$lib/realtimeService';
+	import { modernUi } from '$lib/modernUiStore';
+	import SkeletonLoader from '$lib/components/SkeletonLoader.svelte';
 
 	let currentDate = getToday();
 	let formData = {
@@ -173,6 +175,7 @@
 	let activeFieldEditors = {}; // Map: fieldKey -> username
 	let currentEditingField = null; // Aktuell bearbeitetes Feld (fieldKey)
 	let autoSaveTimeout = null; // Timeout für Auto-Save (Debouncing)
+	let autoSaveStatus = ''; // '', 'saving', 'saved', 'error'
 
 	const zeitslots = ['11:40-12:25', '12:25-13:10', '13:10-14:00', '14:00-14:30'];
 
@@ -575,6 +578,8 @@
 			clearTimeout(autoSaveTimeout);
 		}
 
+		autoSaveStatus = 'saving';
+
 		// Setze neuen Timeout (1 Sekunde Debounce)
 		autoSaveTimeout = setTimeout(async () => {
 			const result = await saveProtokoll(currentDate, formData);
@@ -582,8 +587,12 @@
 			if (result) {
 				// Kein Toast, kein Redirect - nur leises Speichern
 				console.log('Auto-Save erfolgreich');
+				autoSaveStatus = 'saved';
+				setTimeout(() => { autoSaveStatus = ''; }, 2500);
 			} else {
 				console.error('Auto-Save fehlgeschlagen');
+				autoSaveStatus = 'error';
+				setTimeout(() => { autoSaveStatus = ''; }, 4000);
 			}
 		}, 1000); // 1 Sekunde warten vor dem Speichern
 	}
@@ -1032,12 +1041,27 @@
 
 <div class="edit-container">
 	{#if loading}
-		<p class="loading-text">Lade Daten...</p>
+		{#if $modernUi}
+			<SkeletonLoader variant="edit" />
+		{:else}
+			<p class="loading-text">Lade Daten...</p>
+		{/if}
 	{:else}
 		<div class="edit-header">
 			<div class="header-left">
 				<h1>Protokoll bearbeiten</h1>
 				<p class="date">Datum: {currentDate}</p>
+				{#if $modernUi && autoSaveStatus}
+					<div class="autosave-indicator autosave-{autoSaveStatus}">
+						{#if autoSaveStatus === 'saving'}
+							<span class="autosave-dot saving"></span> Speichert...
+						{:else if autoSaveStatus === 'saved'}
+							<span class="autosave-dot saved"></span> Gespeichert
+						{:else if autoSaveStatus === 'error'}
+							<span class="autosave-dot error"></span> Fehler beim Speichern
+						{/if}
+					</div>
+				{/if}
 			</div>
 			<button on:click={openNachrichtenModal} class="nachrichten-btn" title="Team-Notizen">
 				📝
@@ -3593,5 +3617,91 @@
 	:global(.modern-ui) .search-input:focus {
 		box-shadow: 0 0 0 3px var(--accent-glow);
 	}
+	/* Matrix Cell Touch Enhancement */
+	:global(.modern-ui) .matrix-input:focus {
+		border-color: var(--accent-color);
+		box-shadow: 0 0 0 3px var(--accent-glow);
+		background: var(--bg-primary);
+		transform: scale(1.02);
+		position: relative;
+		z-index: 5;
+		transition: all 0.15s ease;
+	}
+
+	@media (max-width: 1024px) {
+		:global(.modern-ui) .matrix td {
+			transition: all 0.15s ease;
+		}
+
+		:global(.modern-ui) .matrix-input:focus {
+			transform: scale(1.05);
+			box-shadow: 0 0 0 3px var(--accent-glow), 0 4px 16px rgba(79, 109, 245, 0.15);
+			min-height: 60px;
+		}
+
+		:global(.modern-ui) .matrix-text-display {
+			min-height: 48px;
+			padding: 12px;
+		}
+	}
+
+	/* Auto-Save Indicator */
+	.autosave-indicator {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 0.8rem;
+		font-weight: 500;
+		padding: 4px 12px;
+		border-radius: var(--radius-md, 8px);
+		margin-top: 6px;
+		animation: fadeIn 0.2s ease;
+	}
+
+	@keyframes fadeIn {
+		from { opacity: 0; transform: translateY(-4px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+
+	.autosave-saving {
+		color: var(--accent-color, #4f6df5);
+		background: var(--accent-light, rgba(79, 109, 245, 0.08));
+	}
+
+	.autosave-saved {
+		color: var(--success-color, #10b981);
+		background: var(--success-bg, rgba(16, 185, 129, 0.08));
+	}
+
+	.autosave-error {
+		color: var(--danger-color, #ef4444);
+		background: var(--danger-bg, rgba(239, 68, 68, 0.08));
+	}
+
+	.autosave-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		display: inline-block;
+	}
+
+	.autosave-dot.saving {
+		background: var(--accent-color, #4f6df5);
+		animation: pulse 1s ease-in-out infinite;
+	}
+
+	.autosave-dot.saved {
+		background: var(--success-color, #10b981);
+	}
+
+	.autosave-dot.error {
+		background: var(--danger-color, #ef4444);
+	}
+
+	@keyframes pulse {
+		0%, 100% { opacity: 1; transform: scale(1); }
+		50% { opacity: 0.5; transform: scale(0.8); }
+	}
+
 	/* === END MODERN UI EDIT PAGE OVERRIDES === */
 </style>

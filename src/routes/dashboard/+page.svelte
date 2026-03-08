@@ -13,6 +13,7 @@
 	import Wochenansicht from '$lib/components/Wochenansicht.svelte';
 	import TeamNachrichtenModal from '$lib/components/TeamNachrichtenModal.svelte';
 	import StatistikModal from '$lib/components/StatistikModal.svelte';
+	import SkeletonLoader from '$lib/components/SkeletonLoader.svelte';
 	import InactivityWarning from '$lib/components/InactivityWarning.svelte';
 
 	let currentDate = getToday();
@@ -387,7 +388,11 @@
 	<!-- Tagesansicht -->
 	{#if viewMode === 'day'}
 		{#if loading}
-			<div class="loading">Lade Protokoll...</div>
+			{#if $modernUi && isAdmin}
+				<SkeletonLoader variant="dashboard" />
+			{:else}
+				<div class="loading">Lade Protokoll...</div>
+			{/if}
 		{:else if protokoll}
 		<div class="protokoll-content">
 			<!-- Druck-Header (nur beim Drucken sichtbar) -->
@@ -552,22 +557,68 @@
 			</section>
 			</div>
 		{:else}
-			<div class="no-protokoll">
-				<p>📝 Für diesen Tag ist noch kein Protokoll vorhanden.</p>
-				<button on:click={() => goto(`/edit?date=${currentDate}`)} class="create-btn">
-					Neues Protokoll erstellen
-				</button>
-			</div>
+			{#if $modernUi && isAdmin}
+				<div class="empty-state-modern">
+					<div class="empty-state-illustration">
+						<svg width="180" height="160" viewBox="0 0 180 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<!-- Clipboard body -->
+							<rect x="40" y="25" width="100" height="120" rx="8" fill="var(--bg-secondary)" stroke="var(--border-color)" stroke-width="2"/>
+							<!-- Clipboard clip -->
+							<rect x="65" y="15" width="50" height="20" rx="4" fill="var(--accent-color)" opacity="0.8"/>
+							<circle cx="90" cy="25" r="4" fill="var(--bg-secondary)"/>
+							<!-- Lines on clipboard -->
+							<rect x="55" y="50" width="70" height="6" rx="3" fill="var(--border-color)" opacity="0.5"/>
+							<rect x="55" y="65" width="55" height="6" rx="3" fill="var(--border-color)" opacity="0.4"/>
+							<rect x="55" y="80" width="60" height="6" rx="3" fill="var(--border-color)" opacity="0.3"/>
+							<rect x="55" y="95" width="40" height="6" rx="3" fill="var(--border-color)" opacity="0.2"/>
+							<!-- Pencil -->
+							<g transform="translate(125, 90) rotate(25)">
+								<rect x="0" y="0" width="8" height="45" rx="2" fill="var(--accent-color)" opacity="0.7"/>
+								<polygon points="0,45 8,45 4,55" fill="var(--accent-color)" opacity="0.9"/>
+							</g>
+						</svg>
+					</div>
+					<h3 class="empty-state-title">Noch kein Protokoll vorhanden</h3>
+					<p class="empty-state-text">
+						Für den {currentDate} wurde noch kein Protokoll erstellt. Starten Sie jetzt!
+					</p>
+					<button on:click={() => goto(`/edit?date=${currentDate}`)} class="empty-state-btn">
+						Neues Protokoll erstellen
+					</button>
+				</div>
+			{:else}
+				<div class="no-protokoll">
+					<p>📝 Für diesen Tag ist noch kein Protokoll vorhanden.</p>
+					<button on:click={() => goto(`/edit?date=${currentDate}`)} class="create-btn">
+						Neues Protokoll erstellen
+					</button>
+				</div>
+			{/if}
 		{/if}
 	{/if}
 
 	<!-- Wochenansicht -->
 	{#if viewMode === 'week'}
 		{#if loading}
-			<div class="loading">Lade Wochendaten...</div>
+			{#if $modernUi && isAdmin}
+				<SkeletonLoader variant="table" />
+			{:else}
+				<div class="loading">Lade Wochendaten...</div>
+			{/if}
 		{:else}
 			<Wochenansicht {wochenDaten} {raeume} />
 		{/if}
+	{/if}
+
+	<!-- Floating Action Button (Modern UI only) -->
+	{#if $modernUi && isAdmin && !protokoll && viewMode === 'day' && !loading}
+		<button
+			class="fab"
+			on:click={() => goto(`/edit?date=${currentDate}`)}
+			title="Neues Protokoll erstellen"
+		>
+			<span class="fab-icon">+</span>
+		</button>
 	{/if}
 </div>
 
@@ -1839,6 +1890,111 @@
 		/* Falls es doch zu groß wird, skalieren */
 		body {
 			zoom: 0.95;
+		}
+	}
+
+	/* === Empty State Modern === */
+	.empty-state-modern {
+		max-width: 480px;
+		margin: 60px auto;
+		text-align: center;
+		padding: 48px 32px;
+		background: var(--bg-secondary);
+		border-radius: var(--radius-xl, 20px);
+		border: 1px solid var(--border-color);
+		box-shadow: var(--shadow-md);
+	}
+
+	.empty-state-illustration {
+		margin-bottom: 24px;
+		animation: floatAnim 3s ease-in-out infinite;
+	}
+
+	@keyframes floatAnim {
+		0%, 100% { transform: translateY(0); }
+		50% { transform: translateY(-8px); }
+	}
+
+	.empty-state-title {
+		font-size: 1.4rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin: 0 0 12px 0;
+		letter-spacing: -0.01em;
+	}
+
+	.empty-state-text {
+		font-size: 0.95rem;
+		color: var(--text-secondary);
+		margin: 0 0 28px 0;
+		line-height: 1.6;
+	}
+
+	.empty-state-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 14px 32px;
+		background: var(--gradient-primary);
+		color: white;
+		border: none;
+		border-radius: var(--radius-md, 12px);
+		font-size: 16px;
+		font-weight: 600;
+		cursor: pointer;
+		box-shadow: var(--shadow-accent);
+		transition: all 0.2s;
+	}
+
+	.empty-state-btn:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 24px rgba(79, 109, 245, 0.3);
+	}
+
+	/* === Floating Action Button === */
+	.fab {
+		position: fixed;
+		bottom: 32px;
+		right: 32px;
+		width: 64px;
+		height: 64px;
+		border-radius: 50%;
+		background: var(--gradient-primary);
+		color: white;
+		border: none;
+		font-size: 32px;
+		font-weight: 300;
+		cursor: pointer;
+		box-shadow: 0 6px 24px rgba(79, 109, 245, 0.4);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		z-index: 100;
+		padding: 0;
+	}
+
+	.fab:hover {
+		transform: scale(1.1) rotate(90deg);
+		box-shadow: 0 8px 32px rgba(79, 109, 245, 0.5);
+	}
+
+	.fab:active {
+		transform: scale(0.95);
+	}
+
+	.fab-icon {
+		line-height: 1;
+		display: block;
+	}
+
+	@media (max-width: 768px) {
+		.fab {
+			bottom: 80px; /* Platz für Bottom Nav */
+			right: 20px;
+			width: 56px;
+			height: 56px;
+			font-size: 28px;
 		}
 	}
 </style>
