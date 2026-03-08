@@ -18,9 +18,6 @@
 		toasts = value;
 	});
 
-	// Reactive: Track modern-ui state
-	$: isModernUi = document?.documentElement?.classList?.contains('modern-ui') || false;
-
 	onMount(async () => {
 		if ($darkMode) {
 			document.documentElement.classList.add('dark');
