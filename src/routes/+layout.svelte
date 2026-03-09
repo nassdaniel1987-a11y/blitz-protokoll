@@ -23,12 +23,11 @@
 			document.documentElement.classList.add('dark');
 		}
 
-		// Modern UI nur für Admins aktivieren
+		// Modern UI aktivieren wenn Store aktiv ist
 		const { data } = await supabase.auth.getSession();
 		if (data.session) {
 			isLoggedIn = true;
-			const isAdmin = data.session.user?.user_metadata?.is_admin === true;
-			if (isAdmin && $modernUi) {
+			if ($modernUi) {
 				document.documentElement.classList.add('modern-ui');
 				isModernUi = true;
 			} else {
@@ -36,7 +35,6 @@
 				isModernUi = false;
 			}
 		} else {
-			// Nicht eingeloggt -> kein Modern UI
 			isLoggedIn = false;
 			document.documentElement.classList.remove('modern-ui');
 			isModernUi = false;
@@ -46,8 +44,7 @@
 		supabase.auth.onAuthStateChange((event, session) => {
 			if (session) {
 				isLoggedIn = true;
-				const isAdmin = session.user?.user_metadata?.is_admin === true;
-				if (isAdmin && $modernUi) {
+				if ($modernUi) {
 					document.documentElement.classList.add('modern-ui');
 					isModernUi = true;
 				} else {

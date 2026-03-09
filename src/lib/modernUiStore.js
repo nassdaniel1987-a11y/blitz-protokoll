@@ -1,12 +1,12 @@
 // src/lib/modernUiStore.js
-// Modern UI Store - aktiviert das modernisierte Design nur für Admin-Nutzer
+// Modern UI Store - aktiviert das modernisierte Design fuer alle Nutzer
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 
 function getInitialModernUi() {
 	if (!browser) return false;
 	const saved = localStorage.getItem('modernUi');
-	// Standardmäßig aktiviert für Admins (kann in Settings deaktiviert werden)
+	// Standardmäßig aktiviert (kann in Settings deaktiviert werden)
 	return saved !== null ? saved === 'true' : true;
 }
 
