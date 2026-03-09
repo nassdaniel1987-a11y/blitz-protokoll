@@ -408,42 +408,40 @@
 	{#if loading}
 		<p class="loading-text">Lade Einstellungen...</p>
 	{:else}
-		<!-- MODERN UI PREVIEW (nur für Admins) -->
-		{#if isAdmin}
-			<section class="section modern-ui-section">
-				<h2 class="section-header">
-					&#x2728; Design-Vorschau (Modern UI)
-				</h2>
-				<p class="description">
-					Teste das modernisierte Design. Nur du als Admin siehst diese Aenderungen. Normale Nutzer sehen weiterhin das klassische Design.
-				</p>
-				<div class="modern-ui-toggle-row">
-					<span class="modern-ui-toggle-label">Modern UI aktiviert</span>
-					<button
-						type="button"
-						class="modern-ui-switch"
-						class:active={$modernUi}
-						on:click={() => {
-							$modernUi = !$modernUi;
-							if ($modernUi) {
-								document.documentElement.classList.add('modern-ui');
-							} else {
-								document.documentElement.classList.remove('modern-ui');
-							}
-						}}
-						role="switch"
-						aria-checked={$modernUi}
-					>
-						<span class="modern-ui-switch-thumb"></span>
-					</button>
+		<!-- MODERN UI Design-Auswahl -->
+		<section class="section modern-ui-section">
+			<h2 class="section-header">
+				&#x2728; Design
+			</h2>
+			<p class="description">
+				Wechsle zwischen dem klassischen und dem modernen Design.
+			</p>
+			<div class="modern-ui-toggle-row">
+				<span class="modern-ui-toggle-label">Modern UI aktiviert</span>
+				<button
+					type="button"
+					class="modern-ui-switch"
+					class:active={$modernUi}
+					on:click={() => {
+						$modernUi = !$modernUi;
+						if ($modernUi) {
+							document.documentElement.classList.add('modern-ui');
+						} else {
+							document.documentElement.classList.remove('modern-ui');
+						}
+					}}
+					role="switch"
+					aria-checked={$modernUi}
+				>
+					<span class="modern-ui-switch-thumb"></span>
+				</button>
+			</div>
+			{#if $modernUi}
+				<div class="modern-ui-info">
+					Das modernisierte Design ist aktiv.
 				</div>
-				{#if $modernUi}
-					<div class="modern-ui-info">
-						Das modernisierte Design ist aktiv. Du siehst die Aenderungen auf allen Seiten. Wenn alles passt, kann das Design fuer alle Nutzer freigeschaltet werden.
-					</div>
-				{/if}
-			</section>
-		{/if}
+			{/if}
+		</section>
 
 		<!-- USER-VERWALTUNG (nur für Admins) -->
 		{#if isAdmin}
