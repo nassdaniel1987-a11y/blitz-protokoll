@@ -81,16 +81,19 @@ export async function updateProtokoll(datum, inhalt) {
  * @returns {Object|null} Gespeichertes Protokoll oder null bei Fehler
  */
 export async function saveProtokoll(datum, inhalt) {
-	// Erst prüfen ob Protokoll existiert
-	const existing = await getProtokoll(datum);
+	// Upsert statt check+create/update (spart einen Supabase-Call)
+	const { data, error } = await supabase
+		.from('protokolle')
+		.upsert({ datum, inhalt }, { onConflict: 'datum' })
+		.select()
+		.single();
 
-	if (existing) {
-		// Aktualisieren
-		return await updateProtokoll(datum, inhalt);
-	} else {
-		// Neu erstellen
-		return await createProtokoll(datum, inhalt);
+	if (error) {
+		console.error('Fehler beim Speichern:', error);
+		return null;
 	}
+
+	return data;
 }
 
 /**

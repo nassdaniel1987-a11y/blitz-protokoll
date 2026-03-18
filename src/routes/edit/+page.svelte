@@ -578,10 +578,9 @@
 			clearTimeout(autoSaveTimeout);
 		}
 
-		autoSaveStatus = 'saving';
-
 		// Setze neuen Timeout (1 Sekunde Debounce)
 		autoSaveTimeout = setTimeout(async () => {
+			autoSaveStatus = 'saving';
 			const result = await saveProtokoll(currentDate, formData);
 
 			if (result) {
@@ -791,13 +790,13 @@
 			formData = formData;
 			// Starte Auto-Save (debounced)
 			saveProtokollSilent();
-			await handleFieldBlur(fieldKey);
+			handleFieldBlur(fieldKey);
 			return;
 		}
 
 		// Normale Person-Zuweisung
 		if (!selectedPerson) {
-			await handleFieldBlur(fieldKey);
+			handleFieldBlur(fieldKey);
 			return; // Keine Person ausgewählt
 		}
 
@@ -819,26 +818,26 @@
 
 		// Starte Auto-Save (debounced)
 		saveProtokollSilent();
-		await handleFieldBlur(fieldKey);
+		handleFieldBlur(fieldKey);
 	}
 
 	// REALTIME: Feld-Fokus - Registriere als aktiver Editor
-	async function handleFieldFocus(fieldKey) {
-		// Altes Feld freigeben
+	function handleFieldFocus(fieldKey) {
+		// Altes Feld freigeben (fire-and-forget, kein await nötig)
 		if (currentEditingField && currentEditingField !== fieldKey) {
-			await unregisterFieldEditor(currentDate, currentEditingField, currentUsername);
+			unregisterFieldEditor(currentDate, currentEditingField, currentUsername);
 		}
 
-		// Neues Feld registrieren
+		// Neues Feld registrieren (fire-and-forget)
 		currentEditingField = fieldKey;
-		await registerFieldEditor(currentDate, fieldKey, currentUsername);
+		registerFieldEditor(currentDate, fieldKey, currentUsername);
 	}
 
 	// REALTIME: Feld-Blur - Feld freigeben
-	async function handleFieldBlur(fieldKey) {
+	function handleFieldBlur(fieldKey) {
 		if (currentEditingField === fieldKey) {
-			await unregisterFieldEditor(currentDate, fieldKey, currentUsername);
 			currentEditingField = null;
+			unregisterFieldEditor(currentDate, fieldKey, currentUsername); // fire-and-forget
 		}
 	}
 
