@@ -26,6 +26,7 @@
 	let showStatistikModal = false;
 	let messageCount = 0;
 	let realtimeChannel = null; // Realtime für Badge-Counter
+	let protokollChannel = null; // Realtime für Protokoll-Änderungen
 	let showOnboardingModal = false; // Onboarding für neue Nutzer
 	let activeTooltip = null; // Für Hilfe-Tooltips
 	let isAdmin = false; // Für Modern UI Banner
@@ -71,11 +72,15 @@
 
 		// REALTIME: Badge-Counter auto-update
 		subscribeToMessages();
+		subscribeToProtokollChanges();
 	});
 
 	onDestroy(() => {
 		if (realtimeChannel) {
 			supabase.removeChannel(realtimeChannel);
+		}
+		if (protokollChannel) {
+			supabase.removeChannel(protokollChannel);
 		}
 		cleanupInactivity();
 	});
@@ -93,6 +98,28 @@
 				},
 				async () => {
 					await loadMessageCount(); // Badge aktualisieren
+				}
+			)
+			.subscribe();
+	}
+
+	// REALTIME: Protokoll-Änderungen live mitbekommen
+	function subscribeToProtokollChanges() {
+		protokollChannel = supabase
+			.channel('dashboard-protokoll-live')
+			.on(
+				'postgres_changes',
+				{
+					event: '*',
+					schema: 'public',
+					table: 'protokolle'
+				},
+				(payload) => {
+					// Nur neu laden wenn das aktuell angezeigte Datum betroffen ist
+					const changedDatum = payload.new?.datum || payload.old?.datum;
+					if (changedDatum === currentDate) {
+						loadProtokoll();
+					}
 				}
 			)
 			.subscribe();
