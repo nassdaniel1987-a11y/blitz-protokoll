@@ -277,6 +277,9 @@
 		protokollSubscription = subscribeToProtokoll(currentDate, async (payload) => {
 			// Wenn jemand anderes speichert, lade Updates automatisch
 			if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+				// Überspringe Merge wenn eigener Save noch aussteht (verhindert Race Condition)
+				if (autoSaveTimeout !== null) return;
+
 				try {
 					const neuesProtokoll = await getProtokoll(currentDate);
 					if (neuesProtokoll) {
