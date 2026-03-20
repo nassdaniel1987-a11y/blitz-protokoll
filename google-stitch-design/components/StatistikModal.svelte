@@ -1,0 +1,864 @@
+<script>
+	import { supabase } from '$lib/supabaseClient';
+	import { onMount } from 'svelte';
+	import { darkMode } from '$lib/darkModeStore';
+	import { isCurrentUserAdmin } from '$lib/userManagementService';
+
+	export let show = false;
+
+	let startDate = '';
+	let endDate = '';
+	let loading = false;
+	let statistiken = null;
+	let error = null;
+	let currentUser = null;
+	let assignedPersonName = null; // Der zugeordnete Name des aktuellen Users
+	let isAdmin = false; // Ist der aktuelle User ein Admin?
+	let showAllPersonen = false; // Toggle für alle Personen anzeigen
+	let expandedPersonen = {}; // Welche Personen sind aufgeklappt
+	let expandedRaeume = {}; // Welche Räume sind aufgeklappt
+
+	// Standard: Letzter Monat
+	onMount(async () => {
+		const heute = new Date();
+		const vorMonat = new Date();
+		vorMonat.setMonth(vorMonat.getMonth() - 1);
+
+		endDate = heute.toISOString().split('T')[0];
+		startDate = vorMonat.toISOString().split('T')[0];
+
+		// Lade aktuellen User und zugeordneten Namen
+		const { data } = await supabase.auth.getSession();
+		if (data.session) {
+			currentUser = data.session.user;
+			assignedPersonName = currentUser.user_metadata?.assigned_person_name || null;
+			isAdmin = await isCurrentUserAdmin();
+		}
+	});
+
+	function close() {
+		show = false;
+	}
+
+	async function loadStatistiken() {
+		if (!startDate || !endDate) {
+			error = 'Bitte beide Datumsfelder ausfüllen';
+			return;
+		}
+
+		loading = true;
+		error = null;
+
+		try {
+			// Lade alle Protokolle im Zeitraum
+			const { data: protokolle, error: fetchError } = await supabase
+				.from('protokolle')
+				.select('*')
+				.gte('datum', startDate)
+				.lte('datum', endDate)
+				.order('datum', { ascending: true });
+
+			if (fetchError) throw fetchError;
+
+			// Filtere Test-Protokolle aus (die mit "test-" beginnen)
+			const echteProtokolle = (protokolle || []).filter(p => !p.datum.startsWith('test-'));
+
+			// Statistiken berechnen
+			const personenStats = {};
+			const raumStats = {};
+			let gesamtTage = 0;
+			let gesamtAnwesenheit = 0;
+			let persoenlicheStats = null;
+
+			echteProtokolle.forEach(protokoll => {
+				gesamtTage++;
+
+				// Anwesenheit
+				const anwesenheit = protokoll.inhalt.anwesenheit?.split(',').map(p => p.trim()).filter(p => p) || [];
+				gesamtAnwesenheit += anwesenheit.length;
+
+				// Temporäre Zählung für DIESEN Tag
+				const tagesStats = {}; // { person: { raeume: {raum: count}, zeitslots: {slot: count} } }
+
+				// Planung durchgehen und temporär pro Tag zählen
+				const planung = protokoll.inhalt.planung || {};
+				Object.entries(planung).forEach(([zeitslot, raeume]) => {
+					Object.entries(raeume).forEach(([raum, personen]) => {
+						const personenListe = personen.split(',').map(p => p.trim()).filter(p => p);
+
+						personenListe.forEach(person => {
+							if (!tagesStats[person]) {
+								tagesStats[person] = { raeume: {}, zeitslots: {} };
+							}
+							tagesStats[person].raeume[raum] = (tagesStats[person].raeume[raum] || 0) + 1;
+							tagesStats[person].zeitslots[zeitslot] = (tagesStats[person].zeitslots[zeitslot] || 0) + 1;
+						});
+					});
+				});
+
+				// Jetzt für jede Person an diesem Tag den häufigsten Raum und Zeitslot ermitteln
+				Object.entries(tagesStats).forEach(([person, stats]) => {
+					// Finde Raum mit höchster Anzahl (Mehrheit)
+					const haeufigsterRaum = Object.entries(stats.raeume)
+						.sort((a, b) => b[1] - a[1])[0]?.[0];
+
+					// Finde Zeitslot mit höchster Anzahl (Mehrheit)
+					const haeufigsterZeitslot = Object.entries(stats.zeitslots)
+						.sort((a, b) => b[1] - a[1])[0]?.[0];
+
+					// Initialisiere Personen-Statistik falls nicht vorhanden
+					if (!personenStats[person]) {
+						personenStats[person] = {
+							gesamt: 0,
+							raeume: {},
+							zeitslots: {}
+						};
+					}
+
+					// Zähle diesen Tag (mit Mehrheitsraum und -zeitslot)
+					personenStats[person].gesamt++;
+					if (haeufigsterRaum) {
+						personenStats[person].raeume[haeufigsterRaum] = (personenStats[person].raeume[haeufigsterRaum] || 0) + 1;
+					}
+					if (haeufigsterZeitslot) {
+						personenStats[person].zeitslots[haeufigsterZeitslot] = (personenStats[person].zeitslots[haeufigsterZeitslot] || 0) + 1;
+					}
+
+					// Raumstatistik: Pro Tag einmal zählen (wenn Person Mehrheit in diesem Raum hatte)
+					if (haeufigsterRaum) {
+						if (!raumStats[haeufigsterRaum]) {
+							raumStats[haeufigsterRaum] = {
+								gesamt: 0,
+								personen: {}
+							};
+						}
+						raumStats[haeufigsterRaum].gesamt++;
+						raumStats[haeufigsterRaum].personen[person] = (raumStats[haeufigsterRaum].personen[person] || 0) + 1;
+					}
+				});
+			});
+
+			// Persönliche Statistiken wenn Name zugeordnet
+			if (assignedPersonName && personenStats[assignedPersonName]) {
+				persoenlicheStats = {
+					name: assignedPersonName,
+					...personenStats[assignedPersonName]
+				};
+			}
+
+			// Sortiere Personen nach Anzahl Einteilungen
+			const personenArray = Object.entries(personenStats)
+				.map(([name, stats]) => ({ name, ...stats }))
+				.sort((a, b) => b.gesamt - a.gesamt);
+
+			const raumArray = Object.entries(raumStats)
+				.map(([name, stats]) => ({ name, ...stats }))
+				.sort((a, b) => b.gesamt - a.gesamt);
+
+			statistiken = {
+				personenStats: personenArray,
+				raumStats: raumArray,
+				persoenlicheStats,
+				gesamtTage,
+				durchschnittAnwesenheit: gesamtTage > 0 ? (gesamtAnwesenheit / gesamtTage).toFixed(1) : 0,
+				zeitraum: { start: startDate, end: endDate }
+			};
+		} catch (err) {
+			console.error('Fehler beim Laden der Statistiken:', err);
+			error = 'Fehler beim Laden der Statistiken';
+		} finally {
+			loading = false;
+		}
+	}
+
+	function handleClickOutside(event) {
+		if (event.target.classList.contains('modal-overlay')) {
+			close();
+		}
+	}
+
+	function togglePerson(personName) {
+		expandedPersonen[personName] = !expandedPersonen[personName];
+		expandedPersonen = { ...expandedPersonen }; // Trigger reactivity
+	}
+
+	function toggleRaum(raumName) {
+		expandedRaeume[raumName] = !expandedRaeume[raumName];
+		expandedRaeume = { ...expandedRaeume }; // Trigger reactivity
+	}
+</script>
+
+{#if show}
+	<div class="modal-overlay" on:click={handleClickOutside}>
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2>📊 Statistiken</h2>
+				<button class="close-btn" on:click={close}>✕</button>
+			</div>
+
+			<div class="modal-body">
+				<!-- Zeitraum-Auswahl -->
+				<div class="zeitraum-auswahl">
+					<div class="date-input-group">
+						<label for="start-date">Von:</label>
+						<input type="date" id="start-date" bind:value={startDate} />
+					</div>
+					<div class="date-input-group">
+						<label for="end-date">Bis:</label>
+						<input type="date" id="end-date" bind:value={endDate} />
+					</div>
+					<button class="btn-load" on:click={loadStatistiken} disabled={loading}>
+						{loading ? 'Lade...' : 'Statistiken laden'}
+					</button>
+				</div>
+
+				{#if error}
+					<div class="error-message">{error}</div>
+				{/if}
+
+				{#if statistiken}
+					<div class="stats-container">
+						<!-- Persönliche Statistik (wenn Name zugeordnet) -->
+						{#if statistiken.persoenlicheStats}
+							<section class="stats-section personal-stats">
+								<h3>👤 Meine Statistiken</h3>
+								<div class="stats-grid">
+									<div class="stat-card highlight">
+										<div class="stat-label">Tage mit Einteilung</div>
+										<div class="stat-value">{statistiken.persoenlicheStats.gesamt}</div>
+									</div>
+									<div class="stat-card">
+										<div class="stat-label">Häufigster Raum</div>
+										<div class="stat-value-small">
+											{Object.entries(statistiken.persoenlicheStats.raeume).sort((a, b) => b[1] - a[1])[0]?.[0] || '-'}
+										</div>
+									</div>
+									<div class="stat-card">
+										<div class="stat-label">Häufigster Zeitslot</div>
+										<div class="stat-value-small">
+											{Object.entries(statistiken.persoenlicheStats.zeitslots).sort((a, b) => b[1] - a[1])[0]?.[0] || '-'}
+										</div>
+									</div>
+								</div>
+
+								<!-- Meine Raumverteilung -->
+								<div class="chart-section">
+									<h4>Meine Raumverteilung</h4>
+									<div class="bar-chart">
+										{#each Object.entries(statistiken.persoenlicheStats.raeume).sort((a, b) => b[1] - a[1]) as [raum, anzahl]}
+											<div class="bar-row">
+												<div class="bar-label">{raum}</div>
+												<div class="bar-container">
+													<div
+														class="bar bar-personal"
+														style="width: {(anzahl / statistiken.persoenlicheStats.gesamt * 100)}%"
+													>
+														<span class="bar-value">{anzahl}</span>
+													</div>
+												</div>
+											</div>
+										{/each}
+									</div>
+								</div>
+							</section>
+						{/if}
+
+						<!-- Übersicht -->
+						<section class="stats-section">
+							<h3>📅 Übersicht</h3>
+							<div class="stats-grid">
+								<div class="stat-card">
+									<div class="stat-label">Tage im Zeitraum</div>
+									<div class="stat-value">{statistiken.gesamtTage}</div>
+								</div>
+								<div class="stat-card">
+									<div class="stat-label">Ø Anwesenheit</div>
+									<div class="stat-value">{statistiken.durchschnittAnwesenheit}</div>
+								</div>
+							</div>
+						</section>
+
+						<!-- Personen-Statistiken (nur für Admins) -->
+						{#if isAdmin}
+							<section class="stats-section">
+								<h3>👥 Tage pro Person (Detailliert)</h3>
+							<div class="chart-section">
+								<div class="bar-chart">
+									{#each (showAllPersonen ? statistiken.personenStats : statistiken.personenStats.slice(0, 10)) as person}
+										<div class="bar-row-wrapper">
+											<div class="bar-row clickable" on:click={() => togglePerson(person.name)}>
+												<div class="bar-label">
+													<span class="expand-icon">{expandedPersonen[person.name] ? '▼' : '▶'}</span>
+													{person.name}
+												</div>
+												<div class="bar-container">
+													<div
+														class="bar bar-primary"
+														style="width: {(person.gesamt / statistiken.personenStats[0].gesamt * 100)}%"
+													>
+														<span class="bar-value">{person.gesamt} Tage</span>
+													</div>
+												</div>
+												<div class="bar-details">
+													{Object.keys(person.raeume).length} Räume
+												</div>
+											</div>
+											{#if expandedPersonen[person.name]}
+												<div class="details-section">
+													<div class="details-title">Raumverteilung:</div>
+													<div class="details-list">
+														{#each Object.entries(person.raeume).sort((a, b) => b[1] - a[1]) as [raum, anzahl]}
+															<div class="detail-item">
+																<span class="detail-label">{raum}:</span>
+																<span class="detail-value">{anzahl} Tage</span>
+																<div class="detail-bar-mini">
+																	<div class="detail-bar-fill" style="width: {(anzahl / person.gesamt * 100)}%"></div>
+																</div>
+															</div>
+														{/each}
+													</div>
+												</div>
+											{/if}
+										</div>
+									{/each}
+								</div>
+								{#if statistiken.personenStats.length > 10}
+									<button class="toggle-all-btn" on:click={() => showAllPersonen = !showAllPersonen}>
+										{showAllPersonen ? '▲' : '▼'} {showAllPersonen ? 'Top 10 anzeigen' : `Alle ${statistiken.personenStats.length} Personen anzeigen`}
+									</button>
+								{/if}
+							</div>
+						</section>
+					{/if}
+
+						<!-- Raum-Statistiken -->
+						<section class="stats-section">
+							<h3>🏠 Tage pro Raum (Detailliert)</h3>
+							<div class="chart-section">
+								<div class="bar-chart">
+									{#each statistiken.raumStats as raum}
+										<div class="bar-row-wrapper">
+											<div class="bar-row clickable" on:click={() => toggleRaum(raum.name)}>
+												<div class="bar-label">
+													<span class="expand-icon">{expandedRaeume[raum.name] ? '▼' : '▶'}</span>
+													{raum.name}
+												</div>
+												<div class="bar-container">
+													<div
+														class="bar bar-secondary"
+														style="width: {(raum.gesamt / statistiken.raumStats[0].gesamt * 100)}%"
+													>
+														<span class="bar-value">{raum.gesamt} Tage</span>
+													</div>
+												</div>
+												<div class="bar-details">
+													{Object.keys(raum.personen).length} Personen
+												</div>
+											</div>
+											{#if expandedRaeume[raum.name]}
+												<div class="details-section">
+													<div class="details-title">Personenverteilung:</div>
+													<div class="details-list">
+														{#each Object.entries(raum.personen).sort((a, b) => b[1] - a[1]) as [person, anzahl]}
+															<div class="detail-item">
+																<span class="detail-label">{person}:</span>
+																<span class="detail-value">{anzahl} Tage</span>
+																<div class="detail-bar-mini">
+																	<div class="detail-bar-fill" style="width: {(anzahl / raum.gesamt * 100)}%"></div>
+																</div>
+															</div>
+														{/each}
+													</div>
+												</div>
+											{/if}
+										</div>
+									{/each}
+								</div>
+							</div>
+						</section>
+					</div>
+				{/if}
+			</div>
+		</div>
+	</div>
+{/if}
+
+<style>
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: rgba(0, 0, 0, 0.7);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		z-index: 1000;
+		padding: 20px;
+	}
+
+	.modal-content {
+		background: var(--bg-secondary);
+		border-radius: 12px;
+		width: 100%;
+		max-width: 900px;
+		max-height: 90vh;
+		display: flex;
+		flex-direction: column;
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+	}
+
+	.modal-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 20px 24px;
+		border-bottom: 2px solid var(--border-color);
+	}
+
+	.modal-header h2 {
+		margin: 0;
+		color: var(--text-primary);
+		font-size: 1.5rem;
+	}
+
+	.close-btn {
+		background: none;
+		border: none;
+		font-size: 24px;
+		color: var(--text-secondary);
+		cursor: pointer;
+		padding: 0;
+		width: 32px;
+		height: 32px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 4px;
+		transition: all 0.2s;
+	}
+
+	.close-btn:hover {
+		background: var(--border-color);
+		color: var(--text-primary);
+	}
+
+	.modal-body {
+		padding: 24px;
+		overflow-y: auto;
+	}
+
+	.zeitraum-auswahl {
+		display: flex;
+		gap: 15px;
+		align-items: flex-end;
+		margin-bottom: 24px;
+		flex-wrap: wrap;
+	}
+
+	.date-input-group {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.date-input-group label {
+		font-size: 0.9rem;
+		color: var(--text-secondary);
+		font-weight: 500;
+	}
+
+	.date-input-group input {
+		padding: 10px 12px;
+		border: 2px solid var(--border-color);
+		border-radius: 8px;
+		font-size: 14px;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+	}
+
+	.date-input-group input:focus {
+		outline: none;
+		border-color: var(--accent-color);
+	}
+
+	.btn-load {
+		padding: 10px 20px;
+		background: var(--accent-color);
+		color: white;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		font-weight: 600;
+		font-size: 14px;
+		transition: all 0.2s;
+	}
+
+	.btn-load:hover:not(:disabled) {
+		background: var(--accent-hover);
+	}
+
+	.btn-load:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.error-message {
+		padding: 12px;
+		background: rgba(231, 76, 60, 0.1);
+		border-left: 4px solid #e74c3c;
+		border-radius: 4px;
+		color: #e74c3c;
+		margin-bottom: 20px;
+	}
+
+	.stats-container {
+		display: flex;
+		flex-direction: column;
+		gap: 24px;
+	}
+
+	.stats-section {
+		background: var(--bg-primary);
+		padding: 20px;
+		border-radius: 8px;
+		border: 1px solid var(--border-color);
+	}
+
+	.stats-section h3 {
+		margin: 0 0 16px 0;
+		color: var(--text-primary);
+		font-size: 1.2rem;
+	}
+
+	.stats-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 16px;
+	}
+
+	.stat-card {
+		background: var(--bg-secondary);
+		padding: 16px;
+		border-radius: 8px;
+		text-align: center;
+		border: 2px solid var(--border-color);
+	}
+
+	.stat-label {
+		font-size: 0.9rem;
+		color: var(--text-secondary);
+		margin-bottom: 8px;
+	}
+
+	.stat-value {
+		font-size: 2rem;
+		font-weight: 700;
+		color: var(--accent-color);
+	}
+
+	.stat-value-small {
+		font-size: 1.2rem;
+		font-weight: 600;
+		color: var(--accent-color);
+	}
+
+	.stat-card.highlight {
+		background: linear-gradient(135deg, var(--accent-color) 0%, #764ba2 100%);
+		border-color: var(--accent-color);
+	}
+
+	.stat-card.highlight .stat-label,
+	.stat-card.highlight .stat-value {
+		color: white;
+	}
+
+	.personal-stats {
+		background: var(--bg-primary);
+		border-left: 4px solid #27ae60;
+	}
+
+	/* Balkendiagramme */
+	.chart-section {
+		margin-top: 16px;
+	}
+
+	.chart-section h4 {
+		margin: 0 0 12px 0;
+		font-size: 1rem;
+		color: var(--text-secondary);
+	}
+
+	.bar-chart {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.bar-row-wrapper {
+		margin-bottom: 4px;
+	}
+
+	.bar-row {
+		display: grid;
+		grid-template-columns: 150px 1fr 150px;
+		gap: 12px;
+		align-items: center;
+		padding: 8px;
+		border-radius: 6px;
+		transition: background 0.2s;
+	}
+
+	.bar-row.clickable {
+		cursor: pointer;
+	}
+
+	.bar-row.clickable:hover {
+		background: var(--border-color);
+	}
+
+	.bar-label {
+		font-weight: 600;
+		color: var(--text-primary);
+		font-size: 0.9rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.expand-icon {
+		font-size: 0.7rem;
+		color: var(--text-secondary);
+		flex-shrink: 0;
+	}
+
+	.bar-container {
+		position: relative;
+		height: 32px;
+		background: var(--border-color);
+		border-radius: 6px;
+		overflow: hidden;
+	}
+
+	.bar {
+		height: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		padding-right: 8px;
+		border-radius: 6px;
+		transition: width 0.5s ease;
+		min-width: 30px;
+	}
+
+	.bar-primary {
+		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+	}
+
+	.bar-secondary {
+		background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%);
+	}
+
+	.bar-personal {
+		background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%);
+	}
+
+	.bar-value {
+		font-weight: 700;
+		color: white;
+		font-size: 0.85rem;
+	}
+
+	.bar-details {
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		text-align: right;
+	}
+
+	.details-section {
+		background: var(--bg-secondary);
+		margin: 8px 0 12px 24px;
+		padding: 16px;
+		border-radius: 8px;
+		border-left: 3px solid var(--accent-color);
+		animation: slideDown 0.3s ease;
+	}
+
+	@keyframes slideDown {
+		from {
+			opacity: 0;
+			max-height: 0;
+		}
+		to {
+			opacity: 1;
+			max-height: 500px;
+		}
+	}
+
+	.details-title {
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--text-secondary);
+		margin-bottom: 12px;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	.details-list {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.detail-item {
+		display: grid;
+		grid-template-columns: 120px 80px 1fr;
+		gap: 12px;
+		align-items: center;
+		padding: 6px 0;
+	}
+
+	.detail-label {
+		font-size: 0.85rem;
+		color: var(--text-primary);
+		font-weight: 500;
+	}
+
+	.detail-value {
+		font-size: 0.85rem;
+		color: var(--accent-color);
+		font-weight: 600;
+	}
+
+	.detail-bar-mini {
+		height: 8px;
+		background: var(--border-color);
+		border-radius: 4px;
+		overflow: hidden;
+	}
+
+	.detail-bar-fill {
+		height: 100%;
+		background: linear-gradient(90deg, var(--accent-color) 0%, #764ba2 100%);
+		border-radius: 4px;
+		transition: width 0.3s ease;
+	}
+
+	.chart-note {
+		margin-top: 12px;
+		text-align: center;
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		font-style: italic;
+	}
+
+	.toggle-all-btn {
+		margin-top: 16px;
+		padding: 10px 16px;
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+		border: 2px solid var(--border-color);
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 0.9rem;
+		font-weight: 600;
+		width: 100%;
+		transition: all 0.2s ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+	}
+
+	.toggle-all-btn:hover {
+		background: var(--bg-primary);
+		border-color: var(--accent-color);
+		color: var(--accent-color);
+	}
+
+	.table-wrapper {
+		overflow-x: auto;
+	}
+
+	.stats-table {
+		width: 100%;
+		border-collapse: collapse;
+	}
+
+	.stats-table thead th {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+		font-weight: 600;
+		padding: 12px;
+		text-align: left;
+		border-bottom: 2px solid var(--border-color);
+	}
+
+	.stats-table tbody td {
+		padding: 12px;
+		border-bottom: 1px solid var(--border-color);
+		color: var(--text-primary);
+	}
+
+	.stats-table tbody tr:hover {
+		background: var(--bg-secondary);
+	}
+
+	.person-name,
+	.raum-name {
+		font-weight: 600;
+		color: var(--accent-color);
+	}
+
+	.centered {
+		text-align: center;
+	}
+
+	@media (max-width: 768px) {
+		.modal-content {
+			max-width: 100%;
+			max-height: 100vh;
+			border-radius: 0;
+		}
+
+		.zeitraum-auswahl {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.btn-load {
+			width: 100%;
+		}
+
+		.stats-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.bar-row {
+			grid-template-columns: 1fr;
+			gap: 6px;
+		}
+
+		.bar-details {
+			text-align: left;
+			font-size: 0.8rem;
+		}
+
+		.detail-item {
+			grid-template-columns: 1fr;
+			gap: 4px;
+		}
+
+		.detail-bar-mini {
+			width: 100%;
+		}
+
+		.details-section {
+			margin-left: 12px;
+		}
+	}
+</style>
